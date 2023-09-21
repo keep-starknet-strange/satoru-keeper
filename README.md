@@ -26,7 +26,11 @@ RUST_LOG=info cargo run
 
 ## 📄 License
 
-[MIT](LICENSE).
+This project is licensed under the MIT license.
+
+See [LICENSE](LICENSE) for more information.
+
+Happy coding! 🎉
 
 ## 🫶 Contributors ✨
 
