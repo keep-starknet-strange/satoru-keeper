@@ -1,18 +1,18 @@
 # Satoru keeper service 🦀
 
-## Description
+## 📝 Description
 
 The keeper is an offchain service for Satoru protocol. It is responsible for:
 
 - Watching the user initiated actions and execute them onchain, following the 2-steps process mechanism of GMX v2.
 
-## Installation
+## 📦 Installation
 
-### Prerequisites
+### 📋 Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install)
 
-### Build
+### 🛠️ Build
 
 ```bash
 cargo build --release
@@ -24,11 +24,11 @@ cargo build --release
 RUST_LOG=info cargo run
 ```
 
-## License
+## 📄 License
 
 [MIT](LICENSE).
 
-## Contributors ✨
+## 🫶 Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
