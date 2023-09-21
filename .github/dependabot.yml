@@ -5,5 +5,3 @@ updates:
     schedule:
       interval: "weekly" # can be `daily` or `monthly` also
     open-pull-requests-limit: 10
-    ignore:
-      # Add the dependencies you want to ignore here.
