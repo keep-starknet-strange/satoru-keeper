@@ -1,0 +1,13 @@
+[package]
+name = "satoru-keeper-service"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+# Satoru dependencies
+satoru-keeper-core = { workspace = true }
+# Third-party dependencies
+log = { workspace = true }
+env_logger = { workspace = true }

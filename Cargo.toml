@@ -1,0 +1,28 @@
+[workspace]
+members = ["crates/service", "crates/core"]
+default-members = ["crates/service"]
+resolver = "2"
+
+[profile.release]
+panic = "unwind"
+
+[profile.production]
+inherits = "release"
+codegen-units = 1    # Setting this to 1 allows for more optimizations at the cost of slower compile time
+lto = true           # Enables Link Time Optimization, enabling more aggressive optimizations across the entire codebase
+opt-level = 3        # Optimize for speed regardless of binary size or compile time
+rpath = false        # Disables adding rpath to the binary
+
+[workspace.package]
+authors = ["Abdelhamid Bakhta <@abdelhamidbakhta>"]
+edition = "2021"
+repository = "https://github.com/keep-starknet-strange/satoru-keeper/"
+version = "0.1.0"
+
+[workspace.dependencies]
+# Workspace dependencies
+satoru-keeper-service = { path = "crates/service" }
+satoru-keeper-core = { path = "crates/core" }
+# Third party dependencies
+log = { version = "0.4.20", default-features = false }
+env_logger = { version = "0.10.0", default-features = false }

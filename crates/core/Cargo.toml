@@ -1,0 +1,9 @@
+[package]
+name = "satoru-keeper-core"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+log = { workspace = true }
