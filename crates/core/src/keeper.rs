@@ -32,7 +32,7 @@ impl Keeper {
     pub async fn new(config: KeeperConfig) -> Result<Self, KeeperError> {
         // Parse the RPC URL.
         let rpc_url = Url::parse(config.rpc_url.as_str())
-            .map_err(|e| KeeperError::ConfigError(format!("invalid rpc url: {}", e.to_string())))?;
+            .map_err(|e| KeeperError::ConfigError(format!("invalid rpc url: {}", e)))?;
 
         // Create the provider to the Starknet node.
         let provider = JsonRpcClient::new(HttpTransport::new(rpc_url));
@@ -41,9 +41,8 @@ impl Keeper {
 
         // Parse the signer account private key.
         let signer_private_key_field_element =
-            FieldElement::from_hex_be(&config.signer_private_key).map_err(|e| {
-                KeeperError::ConfigError(format!("invalid private key: {}", e.to_string()))
-            })?;
+            FieldElement::from_hex_be(&config.signer_private_key)
+                .map_err(|e| KeeperError::ConfigError(format!("invalid private key: {}", e)))?;
 
         // Create the signer that has access to the account.
         let signer = LocalWallet::from(SigningKey::from_secret_scalar(
@@ -51,9 +50,8 @@ impl Keeper {
         ));
 
         // Parse the account address.
-        let account_address = FieldElement::from_hex_be(&config.account_address).map_err(|e| {
-            KeeperError::ConfigError(format!("invalid account address: {}", e.to_string()))
-        })?;
+        let account_address = FieldElement::from_hex_be(&config.account_address)
+            .map_err(|e| KeeperError::ConfigError(format!("invalid account address: {}", e)))?;
 
         // Create the account.
         let account = SingleOwnerAccount::new(
@@ -69,10 +67,7 @@ impl Keeper {
             config.satoru_exchange_router_address.as_str(),
         )
         .map_err(|e| {
-            KeeperError::ConfigError(format!(
-                "invalid satoru exchange router address: {}",
-                e.to_string()
-            ))
+            KeeperError::ConfigError(format!("invalid satoru exchange router address: {}", e))
         })?;
         Ok(Self {
             account,

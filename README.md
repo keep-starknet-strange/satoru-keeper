@@ -24,6 +24,17 @@ cargo build --release
 RUST_LOG=info cargo run
 ```
 
+### Configuration
+
+The keeper is configured using environment variables.
+
+| Name                                    | Description                                              |
+| --------------------------------------- | -------------------------------------------------------- |
+| `KEEPER_RPC_URL`                        | The RPC URL of the Starket node.                         |
+| `KEEPER_SIGNER_PRIVATE_KEY`             | The private key controlling the keeper account contract. |
+| `KEEPER_ACCOUNT_ADDRESS`                | The address of the account contract of the keeper.       |
+| `KEEPER_SATORU_EXCHANGE_ROUTER_ADDRESS` | The address of the Satoru exchange router contract.      |
+
 ## As library
 
 ```rust
