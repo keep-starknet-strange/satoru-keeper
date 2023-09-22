@@ -43,6 +43,7 @@ pub fn new_account(
         provider,
         signer,
         account_address,
+        // TODO: make this configurable.
         chain_id::TESTNET,
         ExecutionEncoding::Legacy,
     ))
