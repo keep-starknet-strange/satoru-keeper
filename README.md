@@ -60,6 +60,21 @@ See [LICENSE](LICENSE) for more information.
 
 Happy coding! 🎉
 
+## 📚 Resources
+
+Here are some resources to help you get started:
+
+- [Satoru Book](https://keep-starknet-strange.github.io/satoru/)
+- [Starknet Book](https://book.starknet.io/)
+- GMX v2 resources
+  - [GMX Synthetics](https://github.com/gmx-io/gmx-synthetics)
+  - [Trading on v2](https://docs.gmx.io/docs/trading/v2)
+  - [Contracts for v2](https://docs.gmx.io/docs/api/contracts-v2/)
+  - [Liquidity on v2](https://docs.gmx.io/docs/providing-liquidity/v2)
+- Some DeFi offchain services example implementations
+  - [swaps-offchain-infra](https://github.com/mycelium-ethereum/swaps-offchain-infra)
+  - [swaps-liquidator](https://github.com/mycelium-ethereum/swaps-liquidator)
+
 ## 🫶 Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
