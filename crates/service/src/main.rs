@@ -2,7 +2,7 @@
 extern crate log;
 use color_eyre::eyre::Result;
 use dotenv::dotenv;
-use satoru_keeper_core::{config::KeeperConfig, keeper::Keeper};
+use satoru_keeper_core::{keepers::common::Keeper, keepers::config::CommonKeeperConfig};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,7 +16,7 @@ async fn main() -> Result<()> {
     info!("starting keeper service...");
 
     // Load the keeper configuration from the environment variables.
-    let config = KeeperConfig::load_from_config()?;
+    let config = CommonKeeperConfig::load_from_config()?;
 
     // Create the keeper.
     let keeper = Keeper::new(config).await?;

@@ -5,20 +5,20 @@ use serde_derive::Deserialize;
 
 #[derive(Default, Builder, Debug, Deserialize)]
 #[builder(setter(into))]
-pub struct KeeperConfig {
+pub struct CommonKeeperConfig {
     pub rpc_url: String,
     pub signer_private_key: String,
     pub account_address: String,
     pub satoru_exchange_router_address: String,
 }
 
-impl KeeperConfig {
+impl CommonKeeperConfig {
     /// Load the keeper configuration from the environment variables.
     /// # Returns
     /// The keeper configuration.
     /// # Errors
     /// - If the configuration is invalid.
-    pub fn load_from_config() -> Result<KeeperConfig, KeeperError> {
+    pub fn load_from_config() -> Result<CommonKeeperConfig, KeeperError> {
         CONFIG.clone().try_deserialize().map_err(|e| e.into())
     }
 }
