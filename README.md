@@ -24,6 +24,23 @@ cargo build --release
 RUST_LOG=info cargo run
 ```
 
+## As library
+
+```rust
+#[tokio::main]
+async fn main() {
+    let config = KeeperConfigBuilder::default()
+        .rpc_url("https://127.0.0.1:5050")
+        .signer_private_key("0x...")
+        .account_address("0x...")
+        .build()?;
+    let keeper = Keeper::new(config).await.unwrap();
+
+    // Then you can use the keeper to execute actions.
+    // keeper.execute_deposit(...);
+}
+```
+
 ## 📄 License
 
 This project is licensed under the MIT license.

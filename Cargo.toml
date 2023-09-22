@@ -20,9 +20,22 @@ repository = "https://github.com/keep-starknet-strange/satoru-keeper/"
 version = "0.1.0"
 
 [workspace.dependencies]
+
 # Workspace dependencies
 satoru-keeper-service = { path = "crates/service" }
 satoru-keeper-core = { path = "crates/core" }
+
+# Starknet related dependencies
+starknet = "0.6.0"
+
 # Third party dependencies
 log = { version = "0.4.20", default-features = false }
+derive_builder = { version = "0.12.0", default-features = false }
 env_logger = { version = "0.10.0", default-features = false }
+thiserror = { version = "1.0.24", default-features = false }
+url = { version = "2.4.1", default-features = false }
+config = { version = "0.13.3", default-features = false }
+dotenv = { version = "0.15.0", default-features = false }
+lazy_static = { version = "1.4.0", default-features = false }
+serde = { version = "1.0.163", default-features = false }
+serde_derive = { version = "1.0.163", default-features = false }
