@@ -19,6 +19,7 @@ lazy_static = { workspace = true }
 config = { workspace = true }
 serde = { workspace = true }
 serde_derive = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies.cargo-husky]
 version = "1"
