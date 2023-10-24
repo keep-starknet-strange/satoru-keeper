@@ -59,7 +59,8 @@ mod tests {
 
     #[test]
     fn test_set_prices_params_to_vec_field_elements() {
-        let tokens = vec![EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()];
+        let tokens =
+            vec![EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()];
         let compacted_min_oracle_block_numbers = vec![1, 2, 3];
         let compacted_max_oracle_block_numbers = vec![4, 5, 6];
         let compacted_oracle_timestamps = vec![7, 8, 9];
@@ -69,7 +70,8 @@ mod tests {
         let compacted_max_prices = vec![19, 20, 21];
         let compacted_max_prices_indexes = vec![22, 23, 24];
         let signatures = vec![FieldElement::from(25_u8), FieldElement::from(26_u8)];
-        let price_feed_tokens = vec![EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()];
+        let price_feed_tokens =
+            vec![EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()];
 
         let set_prices_params = SetPricesParams {
             signer_info: 1,
@@ -88,7 +90,9 @@ mod tests {
 
         let expected = vec![
             FieldElement::from(1_u8),
-            FieldElement::from(EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()),
+            FieldElement::from(
+                EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap(),
+            ),
             FieldElement::from(1_u8),
             FieldElement::from(2_u8),
             FieldElement::from(3_u8),
@@ -115,7 +119,9 @@ mod tests {
             FieldElement::from(24_u8),
             FieldElement::from(25_u8),
             FieldElement::from(26_u8),
-            FieldElement::from(EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()),
+            FieldElement::from(
+                EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap(),
+            ),
         ];
         let out: Vec<FieldElement> = set_prices_params.into();
 
