@@ -1,2 +1,2 @@
-pub mod field_element_utils;
+pub mod field_element;
 pub mod set_prices_params;

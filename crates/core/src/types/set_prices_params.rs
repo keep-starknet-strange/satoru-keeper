@@ -1,7 +1,7 @@
 use serde::Serialize;
 use starknet::core::types::{EthAddress, FieldElement};
 
-use crate::types::field_element_utils::IntoFieldElementVec;
+use crate::types::field_element::IntoFieldElementVec;
 
 #[derive(Debug, Serialize)]
 pub struct SetPricesParams {
