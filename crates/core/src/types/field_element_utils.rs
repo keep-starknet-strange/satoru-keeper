@@ -15,3 +15,20 @@ where
             .collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use starknet::core::types::FieldElement;
+
+    #[test]
+    fn test_as_field_element_vec() {
+        let input = vec![1_u8, 2_u8, 3_u8];
+        let expected = vec![
+            FieldElement::from(1_u8),
+            FieldElement::from(2_u8),
+            FieldElement::from(3_u8),
+        ];
+        assert_eq!(input.as_field_element_vec(), expected);
+    }
+}
