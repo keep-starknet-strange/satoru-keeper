@@ -65,11 +65,14 @@ impl Keeper {
     pub async fn execute_deposit(&self, deposit_key: &str) -> Result<(), KeeperError> {
         info!("running execute_deposit with key: {}", deposit_key);
 
+        let selector = get_selector_from_name("execute_deposit")
+            .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
+
         let result = self
             .account
             .execute(vec![Call {
                 to: self.satoru_exchange_router_address,
-                selector: get_selector_from_name("execute_deposit").unwrap(),
+                selector,
                 calldata: vec![
                     // The deposit key.
                     FieldElement::from_hex_be(deposit_key).unwrap(),
@@ -95,11 +98,18 @@ impl Keeper {
     ) -> Result<(), KeeperError> {
         info!("running execute_deposit with key: {}", deposit_key);
 
-        let deposit_key_field_element = FieldElement::from_hex_be(deposit_key)
-            .expect("Failed to convert deposit_key into FieldElement");
+        let selector = get_selector_from_name("execute_withdrawal")
+            .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
+
+        let deposit_key = FieldElement::from_hex_be(deposit_key).map_err(|e| {
+            KeeperError::ConfigError(format!(
+                "could not convert deposit_key '{}' into FieldElement: {}",
+                deposit_key, e
+            ))
+        })?;
 
         // The deposit key
-        let mut calldata: Vec<FieldElement> = vec![deposit_key_field_element];
+        let mut calldata: Vec<FieldElement> = vec![deposit_key];
         // The SetPricesParams arguments
         calldata.extend::<Vec<FieldElement>>(set_prices_params.into());
 
@@ -107,7 +117,7 @@ impl Keeper {
             .account
             .execute(vec![Call {
                 to: self.satoru_exchange_router_address,
-                selector: get_selector_from_name("execute_withdrawal").unwrap(),
+                selector,
                 calldata,
             }])
             .send()
