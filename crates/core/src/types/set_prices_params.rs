@@ -1,12 +1,12 @@
 use serde::Serialize;
-use starknet::core::types::{EthAddress, FieldElement};
+use starknet::core::types::FieldElement;
 
 use crate::types::field_element::IntoFieldElementVec;
 
 #[derive(Debug, Serialize)]
 pub struct SetPricesParams {
     pub signer_info: u128,
-    pub tokens: Vec<EthAddress>,
+    pub tokens: Vec<FieldElement>,
     pub compacted_min_oracle_block_numbers: Vec<u64>,
     pub compacted_max_oracle_block_numbers: Vec<u64>,
     pub compacted_oracle_timestamps: Vec<u64>,
@@ -16,7 +16,7 @@ pub struct SetPricesParams {
     pub compacted_max_prices: Vec<u128>,
     pub compacted_max_prices_indexes: Vec<u128>,
     pub signatures: Vec<FieldElement>,
-    pub price_feed_tokens: Vec<EthAddress>,
+    pub price_feed_tokens: Vec<FieldElement>,
 }
 
 impl From<&SetPricesParams> for Vec<FieldElement> {
@@ -24,7 +24,7 @@ impl From<&SetPricesParams> for Vec<FieldElement> {
         let mut field_elements = Vec::new();
 
         field_elements.push(FieldElement::from(item.signer_info));
-        field_elements.extend(item.tokens.as_field_element_vec());
+        field_elements.extend(item.tokens.clone());
         field_elements.extend(
             item.compacted_min_oracle_block_numbers
                 .as_field_element_vec(),
@@ -40,7 +40,7 @@ impl From<&SetPricesParams> for Vec<FieldElement> {
         field_elements.extend(item.compacted_max_prices.as_field_element_vec());
         field_elements.extend(item.compacted_max_prices_indexes.as_field_element_vec());
         field_elements.extend(item.signatures.clone());
-        field_elements.extend(item.price_feed_tokens.as_field_element_vec());
+        field_elements.extend(item.price_feed_tokens.clone());
 
         field_elements
     }
@@ -55,12 +55,11 @@ impl From<SetPricesParams> for Vec<FieldElement> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starknet::core::types::{EthAddress, FieldElement};
+    use starknet::core::types::FieldElement;
 
     #[test]
     fn test_set_prices_params_to_vec_field_elements() {
-        let tokens =
-            vec![EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()];
+        let tokens = vec![FieldElement::from(90_u8), FieldElement::from(91_u8)];
         let compacted_min_oracle_block_numbers = vec![1, 2, 3];
         let compacted_max_oracle_block_numbers = vec![4, 5, 6];
         let compacted_oracle_timestamps = vec![7, 8, 9];
@@ -70,8 +69,7 @@ mod tests {
         let compacted_max_prices = vec![19, 20, 21];
         let compacted_max_prices_indexes = vec![22, 23, 24];
         let signatures = vec![FieldElement::from(25_u8), FieldElement::from(26_u8)];
-        let price_feed_tokens =
-            vec![EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap()];
+        let price_feed_tokens = vec![FieldElement::from(33_u8), FieldElement::from(34_u8)];
 
         let set_prices_params = SetPricesParams {
             signer_info: 1,
@@ -90,9 +88,8 @@ mod tests {
 
         let expected = vec![
             FieldElement::from(1_u8),
-            FieldElement::from(
-                EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap(),
-            ),
+            FieldElement::from(90_u8),
+            FieldElement::from(91_u8),
             FieldElement::from(1_u8),
             FieldElement::from(2_u8),
             FieldElement::from(3_u8),
@@ -119,9 +116,8 @@ mod tests {
             FieldElement::from(24_u8),
             FieldElement::from(25_u8),
             FieldElement::from(26_u8),
-            FieldElement::from(
-                EthAddress::from_hex("0x41C7DD48b7D4efBfCD258F09574B297027Cae305").unwrap(),
-            ),
+            FieldElement::from(33_u8),
+            FieldElement::from(34_u8),
         ];
         let out: Vec<FieldElement> = set_prices_params.into();
 
