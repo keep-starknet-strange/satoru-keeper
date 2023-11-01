@@ -1,10 +1,10 @@
 use starknet::core::types::FieldElement;
 
-pub trait IntoFieldElementVec<T: Clone> {
+pub trait IntoFieldElementVec {
     fn as_field_element_vec(&self) -> Vec<FieldElement>;
 }
 
-impl<T> IntoFieldElementVec<T> for Vec<T>
+impl<T> IntoFieldElementVec for Vec<T>
 where
     T: Clone,
     FieldElement: From<T>,
