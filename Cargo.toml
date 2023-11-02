@@ -26,7 +26,7 @@ satoru-keeper-service = { path = "crates/service" }
 satoru-keeper-core = { path = "crates/core" }
 
 # Starknet related dependencies
-starknet = "0.6.0"
+starknet = "0.7.0"
 
 # Third party dependencies
 log = { version = "0.4.20", default-features = false }
