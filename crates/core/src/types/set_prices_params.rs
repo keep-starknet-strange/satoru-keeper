@@ -1,7 +1,7 @@
 use serde::Serialize;
 use starknet::core::types::FieldElement;
 
-use crate::types::field_element::IntoFieldElementVec;
+use crate::types::field_element::{FieldElementVecExt, IntoFieldElementVec};
 
 #[derive(Debug, Serialize)]
 pub struct SetPricesParams {
@@ -24,23 +24,26 @@ impl From<&SetPricesParams> for Vec<FieldElement> {
         let mut field_elements = Vec::new();
 
         field_elements.push(FieldElement::from(item.signer_info));
-        field_elements.extend(item.tokens.clone());
-        field_elements.extend(
-            item.compacted_min_oracle_block_numbers
+
+        field_elements.extend_with_len(&item.tokens.as_field_element_vec());
+        field_elements.extend_with_len(
+            &item
+                .compacted_min_oracle_block_numbers
                 .as_field_element_vec(),
         );
-        field_elements.extend(
-            item.compacted_max_oracle_block_numbers
+        field_elements.extend_with_len(
+            &item
+                .compacted_max_oracle_block_numbers
                 .as_field_element_vec(),
         );
-        field_elements.extend(item.compacted_oracle_timestamps.as_field_element_vec());
-        field_elements.extend(item.compacted_decimals.as_field_element_vec());
-        field_elements.extend(item.compacted_min_prices.as_field_element_vec());
-        field_elements.extend(item.compacted_min_prices_indexes.as_field_element_vec());
-        field_elements.extend(item.compacted_max_prices.as_field_element_vec());
-        field_elements.extend(item.compacted_max_prices_indexes.as_field_element_vec());
-        field_elements.extend(item.signatures.clone());
-        field_elements.extend(item.price_feed_tokens.clone());
+        field_elements.extend_with_len(&item.compacted_oracle_timestamps.as_field_element_vec());
+        field_elements.extend_with_len(&item.compacted_decimals.as_field_element_vec());
+        field_elements.extend_with_len(&item.compacted_min_prices.as_field_element_vec());
+        field_elements.extend_with_len(&item.compacted_min_prices_indexes.as_field_element_vec());
+        field_elements.extend_with_len(&item.compacted_max_prices.as_field_element_vec());
+        field_elements.extend_with_len(&item.compacted_max_prices_indexes.as_field_element_vec());
+        field_elements.extend_with_len(&item.signatures.as_field_element_vec());
+        field_elements.extend_with_len(&item.price_feed_tokens.as_field_element_vec());
 
         field_elements
     }
@@ -87,35 +90,58 @@ mod tests {
         };
 
         let expected = vec![
+            // tokens
             FieldElement::from(1_u8),
+            // compacted_min_oracle_block_numbers
+            FieldElement::from(2_u8),
             FieldElement::from(90_u8),
             FieldElement::from(91_u8),
+            // compacted_min_oracle_block_numbers
+            FieldElement::from(3_u8),
             FieldElement::from(1_u8),
             FieldElement::from(2_u8),
+            FieldElement::from(3_u8),
+            // compacted_max_oracle_block_numbers
             FieldElement::from(3_u8),
             FieldElement::from(4_u8),
             FieldElement::from(5_u8),
             FieldElement::from(6_u8),
+            // compacted_oracle_timestamps
+            FieldElement::from(3_u8),
             FieldElement::from(7_u8),
             FieldElement::from(8_u8),
             FieldElement::from(9_u8),
+            // compacted_decimals
+            FieldElement::from(3_u8),
             FieldElement::from(10_u8),
             FieldElement::from(11_u8),
             FieldElement::from(12_u8),
+            // compacted_min_prices
+            FieldElement::from(3_u8),
             FieldElement::from(13_u8),
             FieldElement::from(14_u8),
             FieldElement::from(15_u8),
+            // compacted_min_prices_indexes
+            FieldElement::from(3_u8),
             FieldElement::from(16_u8),
             FieldElement::from(17_u8),
             FieldElement::from(18_u8),
+            // compacted_max_prices
+            FieldElement::from(3_u8),
             FieldElement::from(19_u8),
             FieldElement::from(20_u8),
             FieldElement::from(21_u8),
+            // compacted_max_prices_indexes
+            FieldElement::from(3_u8),
             FieldElement::from(22_u8),
             FieldElement::from(23_u8),
             FieldElement::from(24_u8),
+            // signatures
+            FieldElement::from(2_u8),
             FieldElement::from(25_u8),
             FieldElement::from(26_u8),
+            // price_feed_tokens
+            FieldElement::from(2_u8),
             FieldElement::from(33_u8),
             FieldElement::from(34_u8),
         ];

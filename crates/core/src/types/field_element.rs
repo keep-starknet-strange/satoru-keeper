@@ -1,5 +1,16 @@
 use starknet::core::types::FieldElement;
 
+pub trait FieldElementVecExt {
+    fn extend_with_len(&mut self, other: &[FieldElement]);
+}
+
+impl FieldElementVecExt for Vec<FieldElement> {
+    fn extend_with_len(&mut self, other: &[FieldElement]) {
+        self.push(FieldElement::from(other.len() as u64));
+        self.extend(other.clone());
+    }
+}
+
 pub trait IntoFieldElementVec {
     fn as_field_element_vec(&self) -> Vec<FieldElement>;
 }
@@ -30,5 +41,33 @@ mod tests {
             FieldElement::from(3_u8),
         ];
         assert_eq!(input.as_field_element_vec(), expected);
+    }
+
+    #[test]
+    fn test_field_element_vec_ext() {
+        let mut vec = vec![FieldElement::from(1_u8), FieldElement::from(2_u8)];
+        let other = vec![FieldElement::from(3_u8), FieldElement::from(4_u8)];
+        let expected = vec![
+            FieldElement::from(1_u8),
+            FieldElement::from(2_u8),
+            FieldElement::from(2_u8), // Length of `other` vec
+            FieldElement::from(3_u8),
+            FieldElement::from(4_u8),
+        ];
+        vec.extend_with_len(&other);
+        assert_eq!(vec, expected);
+    }
+
+    #[test]
+    fn test_extend_with_len_empty_vec() {
+        let mut vec = vec![FieldElement::from(1_u8), FieldElement::from(2_u8)];
+        let other: Vec<FieldElement> = vec![];
+        let expected = vec![
+            FieldElement::from(1_u8),
+            FieldElement::from(2_u8),
+            FieldElement::from(0_u8), // Length of an empty `other` vec
+        ];
+        vec.extend_with_len(&other);
+        assert_eq!(vec, expected);
     }
 }
