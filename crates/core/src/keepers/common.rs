@@ -89,27 +89,27 @@ impl Keeper {
 
     /// Execute a withdrawal.
     /// # Arguments
-    /// * `deposit_key` - The deposit key.
+    /// * `withdrawal_key` - The withdrawal key.
     /// * `set_prices_params`.
     pub async fn execute_withdrawal(
         &self,
-        deposit_key: &str,
+        withdrawal_key: &str,
         set_prices_params: &SetPricesParams,
     ) -> Result<(), KeeperError> {
-        info!("running execute_deposit with key: {}", deposit_key);
+        info!("running execute_deposit with key: {}", withdrawal_key);
 
         let selector = get_selector_from_name("execute_withdrawal")
             .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
 
-        let deposit_key = FieldElement::from_hex_be(deposit_key).map_err(|e| {
+        let withdrawal_key = FieldElement::from_hex_be(withdrawal_key).map_err(|e| {
             KeeperError::ConfigError(format!(
-                "could not convert deposit_key '{}' into FieldElement: {}",
-                deposit_key, e
+                "could not convert withdrawal_key '{}' into FieldElement: {}",
+                withdrawal_key, e
             ))
         })?;
 
         // The deposit key
-        let mut calldata: Vec<FieldElement> = vec![deposit_key];
+        let mut calldata: Vec<FieldElement> = vec![withdrawal_key];
         // The SetPricesParams arguments
         calldata.extend::<Vec<FieldElement>>(set_prices_params.into());
 

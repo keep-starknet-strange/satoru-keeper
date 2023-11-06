@@ -6,21 +6,21 @@ pub trait FieldElementVecExt {
 
 impl FieldElementVecExt for Vec<FieldElement> {
     fn extend_with_len(&mut self, other: &[FieldElement]) {
-        self.push(FieldElement::from(other.len() as u64));
+        self.push(FieldElement::from(other.len()));
         self.extend(other.clone());
     }
 }
 
-pub trait IntoFieldElementVec {
-    fn as_field_element_vec(&self) -> Vec<FieldElement>;
+pub trait ToFieldElementVec {
+    fn to_felt_vec(&self) -> Vec<FieldElement>;
 }
 
-impl<T> IntoFieldElementVec for Vec<T>
+impl<T> ToFieldElementVec for Vec<T>
 where
     T: Clone,
     FieldElement: From<T>,
 {
-    fn as_field_element_vec(&self) -> Vec<FieldElement> {
+    fn to_felt_vec(&self) -> Vec<FieldElement> {
         self.iter()
             .map(|item| FieldElement::from(item.clone()))
             .collect()
@@ -33,14 +33,14 @@ mod tests {
     use starknet::core::types::FieldElement;
 
     #[test]
-    fn test_as_field_element_vec() {
+    fn test_to_felt_vec() {
         let input = vec![1_u8, 2_u8, 3_u8];
         let expected = vec![
             FieldElement::from(1_u8),
             FieldElement::from(2_u8),
             FieldElement::from(3_u8),
         ];
-        assert_eq!(input.as_field_element_vec(), expected);
+        assert_eq!(input.to_felt_vec(), expected);
     }
 
     #[test]

@@ -1,7 +1,7 @@
 use serde::Serialize;
 use starknet::core::types::FieldElement;
 
-use crate::types::field_element::{FieldElementVecExt, IntoFieldElementVec};
+use crate::types::field_element::{FieldElementVecExt, ToFieldElementVec};
 
 #[derive(Debug, Serialize)]
 pub struct SetPricesParams {
@@ -25,25 +25,17 @@ impl From<&SetPricesParams> for Vec<FieldElement> {
 
         field_elements.push(FieldElement::from(item.signer_info));
 
-        field_elements.extend_with_len(&item.tokens.as_field_element_vec());
-        field_elements.extend_with_len(
-            &item
-                .compacted_min_oracle_block_numbers
-                .as_field_element_vec(),
-        );
-        field_elements.extend_with_len(
-            &item
-                .compacted_max_oracle_block_numbers
-                .as_field_element_vec(),
-        );
-        field_elements.extend_with_len(&item.compacted_oracle_timestamps.as_field_element_vec());
-        field_elements.extend_with_len(&item.compacted_decimals.as_field_element_vec());
-        field_elements.extend_with_len(&item.compacted_min_prices.as_field_element_vec());
-        field_elements.extend_with_len(&item.compacted_min_prices_indexes.as_field_element_vec());
-        field_elements.extend_with_len(&item.compacted_max_prices.as_field_element_vec());
-        field_elements.extend_with_len(&item.compacted_max_prices_indexes.as_field_element_vec());
-        field_elements.extend_with_len(&item.signatures.as_field_element_vec());
-        field_elements.extend_with_len(&item.price_feed_tokens.as_field_element_vec());
+        field_elements.extend_with_len(&item.tokens.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_min_oracle_block_numbers.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_max_oracle_block_numbers.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_oracle_timestamps.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_decimals.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_min_prices.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_min_prices_indexes.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_max_prices.to_felt_vec());
+        field_elements.extend_with_len(&item.compacted_max_prices_indexes.to_felt_vec());
+        field_elements.extend_with_len(&item.signatures.to_felt_vec());
+        field_elements.extend_with_len(&item.price_feed_tokens.to_felt_vec());
 
         field_elements
     }
