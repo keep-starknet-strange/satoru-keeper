@@ -96,7 +96,7 @@ impl Keeper {
         withdrawal_key: &str,
         set_prices_params: &SetPricesParams,
     ) -> Result<(), KeeperError> {
-        info!("running execute_deposit with key: {}", withdrawal_key);
+        info!("running execute_withdrawal with key: {}", withdrawal_key);
 
         let selector = get_selector_from_name("execute_withdrawal")
             .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
@@ -108,7 +108,7 @@ impl Keeper {
             ))
         })?;
 
-        // The deposit key
+        // The withdrawal key
         let mut calldata: Vec<FieldElement> = vec![withdrawal_key];
         // The SetPricesParams arguments
         calldata.extend::<Vec<FieldElement>>(set_prices_params.into());
