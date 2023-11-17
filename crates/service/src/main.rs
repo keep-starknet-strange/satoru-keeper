@@ -2,7 +2,10 @@
 extern crate log;
 use color_eyre::eyre::Result;
 use dotenv::dotenv;
-use satoru_keeper_core::{keepers::common::Keeper, keepers::config::CommonKeeperConfig};
+use satoru_keeper_core::{
+    keepers::common::Keeper, keepers::config::CommonKeeperConfig,
+    types::set_prices_params::SetPricesParams,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,7 +24,23 @@ async fn main() -> Result<()> {
     // Create the keeper.
     let keeper = Keeper::new(config).await?;
 
+    // Set the prices.
+    let oracle_params = SetPricesParams {
+        signer_info: 0,
+        tokens: vec![],
+        compacted_min_oracle_block_numbers: vec![],
+        compacted_max_oracle_block_numbers: vec![],
+        compacted_oracle_timestamps: vec![],
+        compacted_decimals: vec![],
+        compacted_min_prices: vec![],
+        compacted_min_prices_indexes: vec![],
+        compacted_max_prices: vec![],
+        compacted_max_prices_indexes: vec![],
+        signatures: vec![],
+        price_feed_tokens: vec![],
+    };
+
     // Execute the deposit.
-    keeper.execute_deposit("0x1234").await?;
+    keeper.execute_deposit("0x1234", &oracle_params).await?;
     Ok(())
 }
