@@ -1,11 +1,14 @@
-use crate::{error::KeeperError, utils::new_provider};
-use crate::{keepers::config::CommonKeeperConfig, utils::new_account};
 use starknet::{
     accounts::{Account, Call, SingleOwnerAccount},
     core::{types::FieldElement, utils::get_selector_from_name},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
     signers::LocalWallet,
 };
+
+use crate::error::KeeperError;
+use crate::keepers::config::CommonKeeperConfig;
+use crate::types::set_prices_params::SetPricesParams;
+use crate::utils::{new_account, new_provider};
 
 use log::info;
 /// The Keeper struct is the main entry point for the Keeper service.
@@ -62,15 +65,60 @@ impl Keeper {
     pub async fn execute_deposit(&self, deposit_key: &str) -> Result<(), KeeperError> {
         info!("running execute_deposit with key: {}", deposit_key);
 
+        let selector = get_selector_from_name("execute_deposit")
+            .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
+
         let result = self
             .account
             .execute(vec![Call {
                 to: self.satoru_exchange_router_address,
-                selector: get_selector_from_name("execute_deposit").unwrap(),
+                selector,
                 calldata: vec![
                     // The deposit key.
                     FieldElement::from_hex_be(deposit_key).unwrap(),
                 ],
+            }])
+            .send()
+            .await
+            // TODO: Handle the error properly.
+            .map_err(|e| KeeperError::StarknetTransactionError(e.to_string()))?;
+
+        dbg!(result);
+        Ok(())
+    }
+
+    /// Execute a withdrawal.
+    /// # Arguments
+    /// * `withdrawal_key` - The withdrawal key.
+    /// * `set_prices_params`.
+    pub async fn execute_withdrawal(
+        &self,
+        withdrawal_key: &str,
+        set_prices_params: &SetPricesParams,
+    ) -> Result<(), KeeperError> {
+        info!("running execute_withdrawal with key: {}", withdrawal_key);
+
+        let selector = get_selector_from_name("execute_withdrawal")
+            .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
+
+        let withdrawal_key = FieldElement::from_hex_be(withdrawal_key).map_err(|e| {
+            KeeperError::ConfigError(format!(
+                "could not convert withdrawal_key '{}' into FieldElement: {}",
+                withdrawal_key, e
+            ))
+        })?;
+
+        // The withdrawal key
+        let mut calldata: Vec<FieldElement> = vec![withdrawal_key];
+        // The SetPricesParams arguments
+        calldata.extend::<Vec<FieldElement>>(set_prices_params.into());
+
+        let result = self
+            .account
+            .execute(vec![Call {
+                to: self.satoru_exchange_router_address,
+                selector,
+                calldata,
             }])
             .send()
             .await
