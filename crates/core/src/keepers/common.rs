@@ -80,9 +80,9 @@ impl Keeper {
             ))
         })?;
 
-        // The withdrawal key
+        // Create calldata with the deposit key
         let mut calldata: Vec<FieldElement> = vec![key];
-        // The SetPricesParams arguments
+        // & the oracle_params arguments
         calldata.extend::<Vec<FieldElement>>(oracle_params.into());
 
         let result = self
@@ -122,9 +122,9 @@ impl Keeper {
             ))
         })?;
 
-        // The withdrawal key
+        // Create calldata with the withdrawal key
         let mut calldata: Vec<FieldElement> = vec![key];
-        // The SetPricesParams arguments
+        // & the oracle_params arguments
         calldata.extend::<Vec<FieldElement>>(oracle_params.into());
 
         let result = self
