@@ -61,22 +61,36 @@ impl Keeper {
 
     /// Execute a deposit.
     /// # Arguments
-    /// * `deposit_key` - The deposit key.
-    pub async fn execute_deposit(&self, deposit_key: &str) -> Result<(), KeeperError> {
-        info!("running execute_deposit with key: {}", deposit_key);
+    /// * `key` - The deposit key.
+    /// * `oracle_params` - The oracle params to set prices before execution.
+    pub async fn execute_deposit(
+        &self,
+        key: &str,
+        oracle_params: &SetPricesParams,
+    ) -> Result<(), KeeperError> {
+        info!("running execute_deposit with key: {}", key);
 
         let selector = get_selector_from_name("execute_deposit")
             .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
+
+        let key = FieldElement::from_hex_be(key).map_err(|e| {
+            KeeperError::ConfigError(format!(
+                "could not convert key '{}' into FieldElement: {}",
+                key, e
+            ))
+        })?;
+
+        // The withdrawal key
+        let mut calldata: Vec<FieldElement> = vec![key];
+        // The SetPricesParams arguments
+        calldata.extend::<Vec<FieldElement>>(oracle_params.into());
 
         let result = self
             .account
             .execute(vec![Call {
                 to: self.satoru_exchange_router_address,
                 selector,
-                calldata: vec![
-                    // The deposit key.
-                    FieldElement::from_hex_be(deposit_key).unwrap(),
-                ],
+                calldata,
             }])
             .send()
             .await
@@ -89,29 +103,29 @@ impl Keeper {
 
     /// Execute a withdrawal.
     /// # Arguments
-    /// * `withdrawal_key` - The withdrawal key.
-    /// * `set_prices_params`.
+    /// * `key` - The withdrawal key.
+    /// * `oracle_params` - The oracle params to set prices before execution.
     pub async fn execute_withdrawal(
         &self,
-        withdrawal_key: &str,
-        set_prices_params: &SetPricesParams,
+        key: &str,
+        oracle_params: &SetPricesParams,
     ) -> Result<(), KeeperError> {
-        info!("running execute_withdrawal with key: {}", withdrawal_key);
+        info!("running execute_withdrawal with key: {}", key);
 
         let selector = get_selector_from_name("execute_withdrawal")
             .map_err(|e| KeeperError::ConfigError(e.to_string()))?;
 
-        let withdrawal_key = FieldElement::from_hex_be(withdrawal_key).map_err(|e| {
+        let key = FieldElement::from_hex_be(key).map_err(|e| {
             KeeperError::ConfigError(format!(
-                "could not convert withdrawal_key '{}' into FieldElement: {}",
-                withdrawal_key, e
+                "could not convert key '{}' into FieldElement: {}",
+                key, e
             ))
         })?;
 
         // The withdrawal key
-        let mut calldata: Vec<FieldElement> = vec![withdrawal_key];
+        let mut calldata: Vec<FieldElement> = vec![key];
         // The SetPricesParams arguments
-        calldata.extend::<Vec<FieldElement>>(set_prices_params.into());
+        calldata.extend::<Vec<FieldElement>>(oracle_params.into());
 
         let result = self
             .account
