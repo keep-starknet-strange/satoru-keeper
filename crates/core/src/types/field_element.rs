@@ -7,7 +7,7 @@ pub trait FieldElementVecExt {
 impl FieldElementVecExt for Vec<FieldElement> {
     fn extend_with_len(&mut self, other: &[FieldElement]) {
         self.push(FieldElement::from(other.len()));
-        self.extend(other.clone());
+        self.extend(other);
     }
 }
 
