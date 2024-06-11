@@ -14,19 +14,19 @@ use starknet::{
 use crate::types::SatoruAction;
 
 abigen!(
-    WithdrawalHandler,
-    "./resources/satoru_WithdrawalHandler.contract_class.json"
+    OrderHandler,
+    "./resources/satoru_OrderHandler.contract_class.json"
 );
 
-async fn handle_withdrawal(
+async fn handle_order(
     account: SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>,
-    withdrawal: SatoruAction,
+    order: SatoruAction,
 ) {
-    let withdrawal_handler_address =
-        env::var("WITHDRAWAL_HANDLER").expect("WITHDRAWAL_HANDLER env variable not set");
-    let withdrawal_handler = WithdrawalHandler::new(
-        FieldElement::from_hex_be(&withdrawal_handler_address)
-            .expect("Conversion error: withdrawal_handler_address"),
+    let order_handler_address =
+        env::var("ORDER_HANDLER").expect("ORDER_HANDLER env variable not set");
+    let order_handler = OrderHandler::new(
+        FieldElement::from_hex_be(&order_handler_address)
+            .expect("Conversion error: order_handler_address"),
         account,
     );
 
@@ -67,11 +67,14 @@ async fn handle_withdrawal(
         price_feed_tokens: vec![],
     };
 
-    let tx = withdrawal_handler
-        .execute_withdrawal(&FieldElement::from_hex_be(&withdrawal.key).expect("Cannot convert string to felt"), &set_prices_params)
+    let tx = order_handler
+        .execute_order(
+            &FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
+            &set_prices_params,
+        )
         .send()
         .await
-        .expect("Withdrawal Execution Failed");
+        .expect("Order Execution Failed");
 
     // TODO: poll transaction status
 }
