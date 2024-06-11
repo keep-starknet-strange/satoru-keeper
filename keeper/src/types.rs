@@ -51,7 +51,6 @@ pub struct SatoruAction {
     // Deposit & Withdrawal shared.
     pub long_token_swap_path: Option<String>,
     pub short_token_swap_path: Option<String>,
-
 }
 
 // A struct representing the payload of a notification.

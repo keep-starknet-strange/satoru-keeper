@@ -19,7 +19,9 @@ pub async fn start_listening<T: DeserializeOwned + Sized + Debug>(
     // Initiate the logger.
     env_logger::init();
 
-    let mut listener: PgListener = PgListener::connect_with(pool).await.expect("Could not connect to pool.");
+    let mut listener: PgListener = PgListener::connect_with(pool)
+        .await
+        .expect("Could not connect to pool.");
     listener.listen_all(channels).await?;
     loop {
         while let Some(notification) = listener.try_recv().await? {
@@ -32,7 +34,7 @@ pub async fn start_listening<T: DeserializeOwned + Sized + Debug>(
             let strr = notification.payload().to_owned();
             let payload: T = serde_json::from_str::<T>(&strr).expect("Could not decode payload.");
             info!("Payload {:?}", payload);
-            
+
             call_back(payload);
         }
     }

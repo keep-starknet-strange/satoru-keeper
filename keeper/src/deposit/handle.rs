@@ -68,7 +68,10 @@ async fn handle_deposit(
     };
 
     let tx = deposit_handler
-        .execute_deposit(&FieldElement::from_hex_be(&deposit.key).expect("Cannot convert string to felt"), &set_prices_params)
+        .execute_deposit(
+            &FieldElement::from_hex_be(&deposit.key).expect("Cannot convert string to felt"),
+            &set_prices_params,
+        )
         .send()
         .await
         .expect("Deposit Execution Failed");
