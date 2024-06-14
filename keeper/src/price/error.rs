@@ -9,5 +9,7 @@ pub enum PragmaAPIError {
     #[error("Unknown Pragma API error")]
     Unknown(String),
     #[error("Could not fetch Pragma price")]
-    FetchError(Box<PragmaAPIError>)
+    FetchError(Box<PragmaAPIError>),
+    #[error("API Key not set")]
+    APIKeyNotSet(),
 }

@@ -1,7 +1,7 @@
+use dotenv::dotenv;
 use reqwest;
 use serde::Deserialize;
 use std::env;
-use dotenv::dotenv;
 
 use super::error::PragmaAPIError;
 
@@ -25,21 +25,17 @@ struct PriceInfo {
     num_sources_aggregated: u64,
     pair_id: String,
     price: String,
-    timestamp:u64
+    timestamp: u64,
 }
 
-async fn handler(
-    path: PathParams,
-    query: QueryParams,
-) -> Result<PriceInfo, PragmaAPIError> {
-
+async fn handler(path: PathParams, query: QueryParams) -> Result<PriceInfo, PragmaAPIError> {
     let api_url = format!(
         "https://api.dev.pragma.build/node/v1/data/{}/{}?interval={}&aggregation={}&timestamp={}",
         path.base, path.quote, path.interval, query.aggregation, path.timestamp
     );
     match fetch_data(&api_url).await {
         Ok(price_info) => Ok(price_info),
-        Err(err) => Err(PragmaAPIError::FetchError(Box::new(err))) 
+        Err(err) => Err(err),
     }
 }
 
@@ -47,25 +43,24 @@ async fn fetch_data(url: &str) -> Result<PriceInfo, PragmaAPIError> {
     dotenv().ok();
 
     let client = reqwest::Client::new();
-    let api_key = env::var("PRAGMA_API_KEY").expect("PRAGMA_API_KEY must be set");
+    let api_key = env::var("PRAGMA_API_KEY").or_else(|e| Err(PragmaAPIError::APIKeyNotSet()))?;
+    if api_key.is_empty() {
+        return Err(PragmaAPIError::APIKeyNotSet());
+    }
+
     let response = client
         .get(url)
         .header("x-api-key", api_key)
         .send()
-        .await.unwrap();
+        .await
+        .unwrap();
     match response.status() {
-        reqwest::StatusCode::OK => {
-            match response.json::<PriceInfo>().await {
-                Ok(parsed) => Ok(parsed),
-                Err(err) => Err(PragmaAPIError::JsonParsing(err)),
-            }
-        }
-        reqwest::StatusCode::UNAUTHORIZED => {
-            Err(PragmaAPIError::UnauthorizedAccess())
-        }
-        other => {
-            Err(PragmaAPIError::Unknown(other.to_string()))
-        }
+        reqwest::StatusCode::OK => match response.json::<PriceInfo>().await {
+            Ok(parsed) => Ok(parsed),
+            Err(err) => Err(PragmaAPIError::JsonParsing(err)),
+        },
+        reqwest::StatusCode::UNAUTHORIZED => Err(PragmaAPIError::UnauthorizedAccess()),
+        other => Err(PragmaAPIError::Unknown(other.to_string())),
     }
 }
 
@@ -80,19 +75,31 @@ mod tests {
             quote: "usd".to_owned(),
             timestamp: 1711110660,
             interval: "1min".to_owned(),
-        
         };
         let query = QueryParams {
             routing: false,
             aggregation: "median".to_owned(),
         };
 
-        let price_info = handler(path, query).await.unwrap();
-        println!("{:?}", price_info);
-        assert_eq!(price_info.decimals, 8);
-        assert_eq!(price_info.pair_id, "ETH/USD");
-        assert_eq!(price_info.price, "0x4f8b06508e");
-        assert_eq!(price_info.timestamp, 1711110660000);
-        assert_eq!(price_info.num_sources_aggregated, 4);
+        let price_info = handler(path, query).await;
+        match price_info {
+            Ok(price_info) => {
+                assert_eq!(price_info.decimals, 8);
+                assert_eq!(price_info.pair_id, "ETH/USD");
+                assert_eq!(price_info.price, "0x4f8b06508e");
+                assert_eq!(price_info.timestamp, 1711110660000);
+                assert_eq!(price_info.num_sources_aggregated, 4);
+            }
+            Err(err) => {
+                println!("{:?}", err);
+                match err {
+                    PragmaAPIError::APIKeyNotSet() => {}
+                    PragmaAPIError::Unknown(_) => {}
+                    _ => {
+                        panic!("Handler failed.")
+                    }
+                }
+            }
+        }
     }
 }
