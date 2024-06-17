@@ -5,6 +5,7 @@ mod events;
 
 use dotenv::dotenv;
 use tokio_postgres::Error;
+use events::handler::Indexer;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -20,7 +21,9 @@ async fn main() -> Result<(), Error> {
 
     let provider = provider::get_provider().unwrap();
 
-    events::handler::fetch_and_process_events(&provider, &client).await?;
+    let indexer = Indexer::new(&provider, &client);
 
-    Ok(())
+    if let Err(e) = indexer.fetch_and_process_events().await {
+        eprintln!("Error: {:?}", e);
+    }
 }

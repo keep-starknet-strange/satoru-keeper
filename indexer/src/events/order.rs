@@ -1,0 +1,85 @@
+use tokio_postgres::Client;
+use crate::events::event::GenericEvent;
+
+#[derive(Debug)]
+pub struct Order {
+    pub block_number: i64,
+    pub transaction_hash: String,
+    pub key: Option<String>,
+    pub order_type: Option<String>,
+    pub decrease_position_swap_type: Option<String>,
+    pub account: Option<String>,
+    pub receiver: Option<String>,
+    pub callback_contract: Option<String>,
+    pub ui_fee_receiver: Option<String>,
+    pub market: Option<String>,
+    pub initial_collateral_token: Option<String>,
+    pub swap_path: Option<String>,
+    pub size_delta_usd: Option<String>,
+    pub initial_collateral_delta_amount: Option<String>,
+    pub trigger_price: Option<String>,
+    pub acceptable_price: Option<String>,
+    pub execution_fee: Option<String>,
+    pub callback_gas_limit: Option<String>,
+    pub min_output_amount: Option<String>,
+    pub updated_at_block: Option<String>,
+    pub is_long: Option<String>,
+    pub is_frozen: Option<String>,
+}
+
+impl Order {
+    pub const ORDER_KEY: &'static str = "03427759bfd3b941f14e687e129519da3c9b0046c5b9aaa290bb1dede63753b3";
+
+    pub fn from_generic_event(event: GenericEvent) -> Self {
+        let data_parts: Vec<Option<String>> = event.data.split(',').map(|s| Some(s.to_string())).collect();
+        Order {
+            block_number: event.block_number,
+            transaction_hash: event.transaction_hash,
+            key: event.key,
+            order_type: data_parts.get(0).cloned().unwrap_or(None),
+            decrease_position_swap_type: data_parts.get(1).cloned().unwrap_or(None),
+            account: data_parts.get(2).cloned().unwrap_or(None),
+            receiver: data_parts.get(3).cloned().unwrap_or(None),
+            callback_contract: data_parts.get(4).cloned().unwrap_or(None),
+            ui_fee_receiver: data_parts.get(5).cloned().unwrap_or(None),
+            market: data_parts.get(6).cloned().unwrap_or(None),
+            initial_collateral_token: data_parts.get(7).cloned().unwrap_or(None),
+            swap_path: data_parts.get(8).cloned().unwrap_or(None),
+            size_delta_usd: data_parts.get(9).cloned().unwrap_or(None),
+            initial_collateral_delta_amount: data_parts.get(10).cloned().unwrap_or(None),
+            trigger_price: data_parts.get(11).cloned().unwrap_or(None),
+            acceptable_price: data_parts.get(12).cloned().unwrap_or(None),
+            execution_fee: data_parts.get(13).cloned().unwrap_or(None),
+            callback_gas_limit: data_parts.get(14).cloned().unwrap_or(None),
+            min_output_amount: data_parts.get(15).cloned().unwrap_or(None),
+            updated_at_block: data_parts.get(16).cloned().unwrap_or(None),
+            is_long: data_parts.get(17).cloned().unwrap_or(None),
+            is_frozen: data_parts.get(18).cloned().unwrap_or(None),
+        }
+    }
+
+    pub async fn insert(&self, client: &Client) -> Result<u64, tokio_postgres::Error> {
+        client.execute(
+            "INSERT INTO orders (
+                block_number, transaction_hash, key, order_type, decrease_position_swap_type, account,
+                receiver, callback_contract, ui_fee_receiver, market, initial_collateral_token, swap_path,
+                size_delta_usd, initial_collateral_delta_amount, trigger_price, acceptable_price,
+                execution_fee, callback_gas_limit, min_output_amount, updated_at_block, is_long, is_frozen
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6,
+                $7, $8, $9, $10, $11, $12,
+                $13, $14, $15, $16,
+                $17, $18, $19, $20, $21, $22
+            )",
+            &[
+                &self.block_number, &self.transaction_hash, &self.key, &self.order_type, 
+                &self.decrease_position_swap_type, &self.account, &self.receiver, 
+                &self.callback_contract, &self.ui_fee_receiver, &self.market, 
+                &self.initial_collateral_token, &self.swap_path, &self.size_delta_usd, 
+                &self.initial_collateral_delta_amount, &self.trigger_price, &self.acceptable_price, 
+                &self.execution_fee, &self.callback_gas_limit, &self.min_output_amount, 
+                &self.updated_at_block, &self.is_long, &self.is_frozen
+            ],
+        ).await
+    }
+}
