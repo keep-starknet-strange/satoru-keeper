@@ -1,15 +1,12 @@
 use starknet::{
-    core::types::{BlockId, BlockTag, FieldElement, EventFilter, Event as StarknetEvent},
+    core::types::{BlockId, BlockTag, FieldElement, EventFilter, EmittedEvent},
     providers::jsonrpc::{HttpTransport, JsonRpcClient},
     providers::Provider,
 };
 use tokio_postgres::Client;
 use hex;
 
-use crate::events::order::Order;
-use crate::events::deposit::Deposit;
-use crate::events::withdrawal::Withdrawal;
-use crate::events::event::{GenericEvent, EventType};
+use crate::events::{order::Order, deposit::Deposit, withdrawal::Withdrawal, event::{GenericEvent, EventType}};
 
 pub struct Indexer<'a> {
     provider: &'a JsonRpcClient<HttpTransport>,
@@ -57,7 +54,7 @@ impl<'a> Indexer<'a> {
 
     async fn process_event(
         &self,
-        event: &StarknetEvent,
+        event: &EmittedEvent,
         order_created_key: FieldElement,
         deposit_created_key: FieldElement,
         withdrawal_created_key: FieldElement,

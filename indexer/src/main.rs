@@ -26,4 +26,6 @@ async fn main() -> Result<(), Error> {
     if let Err(e) = indexer.fetch_and_process_events().await {
         eprintln!("Error: {:?}", e);
     }
+
+    Ok(())
 }
