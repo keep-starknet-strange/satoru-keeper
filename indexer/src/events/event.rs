@@ -9,4 +9,5 @@ pub enum EventType {
     Order(GenericEvent),
     Deposit(GenericEvent),
     Withdrawal(GenericEvent),
+    MarketCreated(GenericEvent),
 }

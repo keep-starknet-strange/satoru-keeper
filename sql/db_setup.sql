@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     callback_gas_limit BIGINT
 );
 
+CREATE TABLE IF NOT EXISTS market_created (
+    block_number BIGINT NOT NULL,
+    transaction_hash TEXT NOT NULL,
+    key TEXT,
+    creator TEXT,
+    market_token TEXT,
+    index_token TEXT,
+    long_token TEXT,
+    short_token TEXT,
+    market_type TEXT
+);
+
 -- Drop the existing function and triggers if it exists
 DROP TRIGGER IF EXISTS orders_notify_update ON orders;
 DROP TRIGGER IF EXISTS orders_notify_insert ON orders;
@@ -116,3 +128,30 @@ CREATE TRIGGER withdrawals_notify_update AFTER UPDATE ON withdrawals FOR EACH RO
 
 -- Add INSERT row trigger
 CREATE TRIGGER withdrawals_notify_insert AFTER INSERT ON withdrawals FOR EACH ROW EXECUTE PROCEDURE withdrawals_update_notify();
+
+-- Drop the existing function and triggers if it exists
+DROP TRIGGER IF EXISTS market_created_notify_update ON market_created;
+DROP TRIGGER IF EXISTS market_created_notify_insert ON market_created;
+
+DROP FUNCTION IF EXISTS market_created_update_notify();
+
+-- Add a table update notification function
+CREATE OR REPLACE FUNCTION market_created_update_notify() RETURNS trigger AS $$
+DECLARE
+  payload json;
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    payload = row_to_json(NEW);
+  ELSE
+    payload = row_to_json(OLD);
+  END IF;
+  PERFORM pg_notify('market_created_update', json_build_object('table', TG_TABLE_NAME, 'action_type', TG_OP, 'row_data', payload)::text);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add UPDATE row trigger
+CREATE TRIGGER market_created_notify_update AFTER UPDATE ON market_created FOR EACH ROW EXECUTE PROCEDURE market_created_update_notify();
+
+-- Add INSERT row trigger
+CREATE TRIGGER market_created_notify_insert AFTER INSERT ON market_created FOR EACH ROW EXECUTE PROCEDURE market_created_update_notify();
