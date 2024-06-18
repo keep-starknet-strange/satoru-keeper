@@ -5,7 +5,6 @@ use starknet::{
 };
 use tokio_postgres::Client;
 use hex;
-
 use crate::events::{order::Order, deposit::Deposit, withdrawal::Withdrawal, event::{GenericEvent, EventType}};
 
 pub struct Indexer<'a> {

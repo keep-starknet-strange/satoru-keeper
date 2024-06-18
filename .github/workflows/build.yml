@@ -22,12 +22,16 @@ jobs:
 
       - name: Format code
         run: cargo fmt -- --check
+        working-directory: keeper
 
       - name: Check code
         run: cargo check
+        working-directory: keeper
 
       - name: Clippy
         run: cargo clippy -- -D warnings
+        working-directory: keeper
 
       - name: Build
         run: cargo build
+        working-directory: keeper
