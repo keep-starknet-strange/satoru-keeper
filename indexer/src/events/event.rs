@@ -3,7 +3,6 @@ pub struct GenericEvent {
     pub transaction_hash: String,
     pub key: Option<String>,
     pub data: String,
-    SwapFeesCollected(GenericEvent),
 }
 
 pub enum EventType {
@@ -11,4 +10,5 @@ pub enum EventType {
     Deposit(GenericEvent),
     Withdrawal(GenericEvent),
     MarketCreated(GenericEvent),
+    SwapFeesCollected(GenericEvent),
 }
