@@ -5,7 +5,7 @@ use starknet::{
 };
 use tokio_postgres::Client;
 use hex;
-use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, swap_fees_collected::SwapFeesCollected};
+use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, swap_fees_collected::SwapFeesCollected, swap_info::SwapInfo};
 
 
 
@@ -25,6 +25,7 @@ impl<'a> Indexer<'a> {
         let withdrawal_created_key = FieldElement::from_hex_be(Withdrawal::WITHDRAWAL_KEY).unwrap();
         let market_created_key = FieldElement::from_hex_be(MarketCreated::MARKET_KEY).unwrap();
         let swap_fees_collected_key = FieldElement::from_hex_be(SwapFeesCollected::SWAP_FEES_COLLECTED_KEY).unwrap();
+        let swap_info_key = FieldElement::from_hex_be(SwapInfo::SWAP_INFO_KEY).unwrap();
 
         let event_filter = self.create_event_filter(&[
             order_created_key, 
@@ -32,6 +33,7 @@ impl<'a> Indexer<'a> {
             withdrawal_created_key,
             market_created_key,
             swap_fees_collected_key, 
+            swap_info_key,
         ]);
 
         match self.provider.get_events(event_filter, None, 100).await {
@@ -65,6 +67,7 @@ impl<'a> Indexer<'a> {
         withdrawal_created_key: FieldElement,
         market_created_key: FieldElement,
         swap_fees_collected_key: FieldElement,
+        swap_info_key: FieldElement
     ) -> Result<(), tokio_postgres::Error> {
         println!("Event found: {:?}", event);
         let block_number = event.block_number as i64;
@@ -115,6 +118,14 @@ impl<'a> Indexer<'a> {
                 data,
             };
             self.process_specific_event(EventType::SwapFeesCollected(swap_fees_event)).await?;
+        } else if event.keys.contains(&swap_info_key) {
+            let swap_info_event = GenericEvent {
+                block_number,
+                transaction_hash: transaction_hash.clone(),
+                key: key.clone(),
+                data,
+            };
+            self.process_specific_event(EventType::SwapInfo(swap_info_event)).await?;
         } else {
             println!("Unknown event type: {:?}", event);
         }
@@ -143,6 +154,10 @@ impl<'a> Indexer<'a> {
             EventType::SwapFeesCollected(event) => {
                 let swap_fees = SwapFeesCollected::from_generic_event(event);
                 swap_fees.insert(&self.client).await?;
+            },
+            EventType::SwapInfo(event) => {
+                let swap_info = SwapInfo::from_generic_event(event);
+                swap_info.insert(&self.client).await?;
             },
         }
         Ok(())

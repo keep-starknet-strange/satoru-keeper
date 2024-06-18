@@ -91,6 +91,26 @@ CREATE TABLE IF NOT EXISTS swap_fees_collected (
     ui_fee_amount BIGINT
 );
 
+CREATE TABLE IF NOT EXISTS swap_info (
+    block_number BIGINT NOT NULL,
+    transaction_hash TEXT NOT NULL,
+    key TEXT,
+    order_key TEXT,
+    market TEXT,
+    receiver TEXT,
+    token_in TEXT,
+    token_out TEXT,
+    token_in_price BIGINT,
+    token_out_price BIGINT,
+    amount_in BIGINT,
+    amount_in_after_fees BIGINT,
+    amount_out BIGINT,
+    price_impact_usd_mag BIGINT,
+    price_impact_usd_sign BOOLEAN,
+    price_impact_amount_mag BIGINT,
+    price_impact_amount_sign BOOLEAN
+);
+
 -- Drop the existing function and triggers if it exists
 DROP TRIGGER IF EXISTS orders_notify_update ON orders;
 DROP TRIGGER IF EXISTS orders_notify_insert ON orders;
@@ -198,3 +218,30 @@ CREATE TRIGGER swap_fees_collected_notify_update AFTER UPDATE ON swap_fees_colle
 
 -- Add INSERT row trigger
 CREATE TRIGGER swap_fees_collected_notify_insert AFTER INSERT ON swap_fees_collected FOR EACH ROW EXECUTE PROCEDURE swap_fees_collected_update_notify();
+
+-- Drop the existing function and triggers if it exists
+DROP TRIGGER IF EXISTS swap_info_notify_update ON swap_info;
+DROP TRIGGER IF EXISTS swap_info_notify_insert ON swap_info;
+
+DROP FUNCTION IF EXISTS swap_info_update_notify();
+
+-- Add a table update notification function
+CREATE OR REPLACE FUNCTION swap_info_update_notify() RETURNS trigger AS $$
+DECLARE
+  payload json;
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    payload = row_to_json(NEW);
+  ELSE
+    payload = row_to_json(OLD);
+  END IF;
+  PERFORM pg_notify('swap_info_update', json_build_object('table', TG_TABLE_NAME, 'action_type', TG_OP, 'row_data', payload)::text);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add UPDATE row trigger
+CREATE TRIGGER swap_info_notify_update AFTER UPDATE ON swap_info FOR EACH ROW EXECUTE PROCEDURE swap_info_update_notify();
+
+-- Add INSERT row trigger
+CREATE TRIGGER swap_info_notify_insert AFTER INSERT ON swap_info FOR EACH ROW EXECUTE PROCEDURE swap_info_update_notify();
