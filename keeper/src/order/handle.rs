@@ -1,4 +1,4 @@
-use std::{env, vec};
+use std::{env, vec, sync::Arc};
 
 use cainome::{
     cairo_serde::{ContractAddress, U256},
@@ -11,15 +11,18 @@ use starknet::{
     signers::LocalWallet,
 };
 
-use crate::types::SatoruAction;
+use crate::{
+    types::SatoruAction,
+    price::utils::get_pragma_price
+};
 
 abigen!(
     OrderHandler,
     "./resources/satoru_OrderHandler.contract_class.json"
 );
 
-async fn handle_order(
-    account: SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>,
+pub async fn handle_order(
+    account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
     order: SatoruAction,
 ) {
     let order_handler_address =

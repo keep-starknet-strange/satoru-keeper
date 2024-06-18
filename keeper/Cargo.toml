@@ -19,6 +19,7 @@ reqwest = { version = "0.12.4", features = ["json"] }
 dotenv = "0.15.0"
 actix-web = "4.7.0"
 thiserror = "1.0.61"
+url = "2.5.1"
 
 
 [dev-dependencies]

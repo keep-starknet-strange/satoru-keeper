@@ -1,4 +1,4 @@
-use std::{env, vec};
+use std::{env, vec, sync::Arc};
 
 use cainome::{
     cairo_serde::{ContractAddress, U256},
@@ -18,8 +18,8 @@ abigen!(
     "./resources/satoru_WithdrawalHandler.contract_class.json"
 );
 
-async fn handle_withdrawal(
-    account: SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>,
+pub async fn handle_withdrawal(
+    account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
     withdrawal: SatoruAction,
 ) {
     let withdrawal_handler_address =
