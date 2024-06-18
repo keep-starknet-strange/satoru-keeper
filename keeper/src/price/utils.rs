@@ -28,7 +28,7 @@ struct PriceInfo {
     timestamp: u64,
 }
 
-async fn handler(path: PathParams, query: QueryParams) -> Result<PriceInfo, PragmaAPIError> {
+pub async fn get_pragma_price(path: PathParams, query: QueryParams) -> Result<PriceInfo, PragmaAPIError> {
     let api_url = format!(
         "https://api.dev.pragma.build/node/v1/data/{}/{}?interval={}&aggregation={}&timestamp={}",
         path.base, path.quote, path.interval, query.aggregation, path.timestamp
@@ -81,7 +81,7 @@ mod tests {
             aggregation: "median".to_owned(),
         };
 
-        let price_info = handler(path, query).await;
+        let price_info = get_pragma_price(path, query).await;
         match price_info {
             Ok(price_info) => {
                 assert_eq!(price_info.decimals, 8);

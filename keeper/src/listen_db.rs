@@ -6,6 +6,7 @@ use sqlx::error::Error;
 use sqlx::postgres::PgListener;
 use sqlx::Pool;
 use sqlx::Postgres;
+use tokio::task::JoinHandle;
 
 // Listens to notifications from PostgreSQL channels.
 // @pool: A reference to a connection pool for PostgreSQL.
@@ -14,7 +15,7 @@ use sqlx::Postgres;
 pub async fn start_listening<T: DeserializeOwned + Sized + Debug>(
     pool: &Pool<Postgres>,
     channels: Vec<&str>,
-    call_back: impl Fn(T),
+    call_back: impl Fn(T) -> JoinHandle<()>,
 ) -> Result<(), Error> {
     // Initiate the logger.
     env_logger::init();
