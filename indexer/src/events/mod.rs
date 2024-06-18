@@ -5,5 +5,6 @@ pub mod withdrawal;
 pub mod market_created;
 pub mod swap_fees_collected;
 pub mod swap_info;
+pub mod pool_amount_updated;
 
 pub mod handler;

@@ -5,7 +5,7 @@ use starknet::{
 };
 use tokio_postgres::Client;
 use hex;
-use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, swap_fees_collected::SwapFeesCollected, swap_info::SwapInfo};
+use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, swap_fees_collected::SwapFeesCollected, swap_info::SwapInfo, pool_amount_updated::PoolAmountUpdated};
 
 
 
@@ -26,6 +26,8 @@ impl<'a> Indexer<'a> {
         let market_created_key = FieldElement::from_hex_be(MarketCreated::MARKET_KEY).unwrap();
         let swap_fees_collected_key = FieldElement::from_hex_be(SwapFeesCollected::SWAP_FEES_COLLECTED_KEY).unwrap();
         let swap_info_key = FieldElement::from_hex_be(SwapInfo::SWAP_INFO_KEY).unwrap();
+        let pool_amount_updated_key = FieldElement::from_hex_be(PoolAmountUpdated::POOL_AMOUNT_UPDATED_KEY).unwrap();
+
 
         let event_filter = self.create_event_filter(&[
             order_created_key, 
@@ -34,6 +36,7 @@ impl<'a> Indexer<'a> {
             market_created_key,
             swap_fees_collected_key, 
             swap_info_key,
+            pool_amount_updated_key
         ]);
 
         match self.provider.get_events(event_filter, None, 100).await {
@@ -67,7 +70,8 @@ impl<'a> Indexer<'a> {
         withdrawal_created_key: FieldElement,
         market_created_key: FieldElement,
         swap_fees_collected_key: FieldElement,
-        swap_info_key: FieldElement
+        swap_info_key: FieldElement,
+        pool_amount_updated_key: FieldElement
     ) -> Result<(), tokio_postgres::Error> {
         println!("Event found: {:?}", event);
         let block_number = event.block_number as i64;
@@ -126,6 +130,14 @@ impl<'a> Indexer<'a> {
                 data,
             };
             self.process_specific_event(EventType::SwapInfo(swap_info_event)).await?;
+        } else if event.keys.contains(&pool_amount_updated_key) {
+            let pool_amount_updated_event = GenericEvent {
+                block_number,
+                transaction_hash: transaction_hash.clone(),
+                key: key.clone(),
+                data,
+            };
+            self.process_specific_event(EventType::PoolAmountUpdated(pool_amount_updated_event)).await?;
         } else {
             println!("Unknown event type: {:?}", event);
         }
@@ -158,6 +170,10 @@ impl<'a> Indexer<'a> {
             EventType::SwapInfo(event) => {
                 let swap_info = SwapInfo::from_generic_event(event);
                 swap_info.insert(&self.client).await?;
+            },
+            EventType::PoolAmountUpdated(event) => {
+                let pool_amount_updated = PoolAmountUpdated::from_generic_event(event);
+                pool_amount_updated.insert(&self.client).await?;
             },
         }
         Ok(())
