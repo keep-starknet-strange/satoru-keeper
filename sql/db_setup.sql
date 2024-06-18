@@ -75,6 +75,22 @@ CREATE TABLE IF NOT EXISTS market_created (
     market_type TEXT
 );
 
+CREATE TABLE IF NOT EXISTS swap_fees_collected (
+    block_number BIGINT NOT NULL,
+    transaction_hash TEXT NOT NULL,
+    key TEXT,
+    market TEXT,
+    token TEXT,
+    token_price BIGINT,
+    action TEXT,
+    fee_receiver_amount BIGINT,
+    fee_amount_for_pool BIGINT,
+    amount_after_fees BIGINT,
+    ui_fee_receiver TEXT,
+    ui_fee_receiver_factor BIGINT,
+    ui_fee_amount BIGINT
+);
+
 -- Drop the existing function and triggers if it exists
 DROP TRIGGER IF EXISTS orders_notify_update ON orders;
 DROP TRIGGER IF EXISTS orders_notify_insert ON orders;
@@ -155,3 +171,30 @@ CREATE TRIGGER market_created_notify_update AFTER UPDATE ON market_created FOR E
 
 -- Add INSERT row trigger
 CREATE TRIGGER market_created_notify_insert AFTER INSERT ON market_created FOR EACH ROW EXECUTE PROCEDURE market_created_update_notify();
+
+-- Drop the existing function and triggers if it exists
+DROP TRIGGER IF EXISTS swap_fees_collected_notify_update ON swap_fees_collected;
+DROP TRIGGER IF EXISTS swap_fees_collected_notify_insert ON swap_fees_collected;
+
+DROP FUNCTION IF EXISTS swap_fees_collected_update_notify();
+
+-- Add a table update notification function
+CREATE OR REPLACE FUNCTION swap_fees_collected_update_notify() RETURNS trigger AS $$
+DECLARE
+  payload json;
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    payload = row_to_json(NEW);
+  ELSE
+    payload = row_to_json(OLD);
+  END IF;
+  PERFORM pg_notify('swap_fees_collected_update', json_build_object('table', TG_TABLE_NAME, 'action_type', TG_OP, 'row_data', payload)::text);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add UPDATE row trigger
+CREATE TRIGGER swap_fees_collected_notify_update AFTER UPDATE ON swap_fees_collected FOR EACH ROW EXECUTE PROCEDURE swap_fees_collected_update_notify();
+
+-- Add INSERT row trigger
+CREATE TRIGGER swap_fees_collected_notify_insert AFTER INSERT ON swap_fees_collected FOR EACH ROW EXECUTE PROCEDURE swap_fees_collected_update_notify();

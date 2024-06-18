@@ -5,7 +5,8 @@ use starknet::{
 };
 use tokio_postgres::Client;
 use hex;
-use crate::events::{order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, event::{GenericEvent, EventType}};
+use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, swap_fees_collected::SwapFeesCollected};
+
 
 
 pub struct Indexer<'a> {
@@ -23,18 +24,20 @@ impl<'a> Indexer<'a> {
         let deposit_created_key = FieldElement::from_hex_be(Deposit::DEPOSIT_KEY).unwrap();
         let withdrawal_created_key = FieldElement::from_hex_be(Withdrawal::WITHDRAWAL_KEY).unwrap();
         let market_created_key = FieldElement::from_hex_be(MarketCreated::MARKET_KEY).unwrap();
+        let swap_fees_collected_key = FieldElement::from_hex_be(SwapFeesCollected::SWAP_FEES_COLLECTED_KEY).unwrap();
 
         let event_filter = self.create_event_filter(&[
             order_created_key, 
             deposit_created_key, 
             withdrawal_created_key,
-            market_created_key, 
+            market_created_key,
+            swap_fees_collected_key, 
         ]);
 
         match self.provider.get_events(event_filter, None, 100).await {
             Ok(events_page) => {
                 for event in events_page.events {
-                    self.process_event(&event, order_created_key, deposit_created_key, withdrawal_created_key, market_created_key).await?;
+                    self.process_event(&event, order_created_key, deposit_created_key, withdrawal_created_key, market_created_key, swap_fees_collected_key).await?;
                 }
             },
             Err(e) => {
@@ -61,6 +64,7 @@ impl<'a> Indexer<'a> {
         deposit_created_key: FieldElement,
         withdrawal_created_key: FieldElement,
         market_created_key: FieldElement,
+        swap_fees_collected_key: FieldElement,
     ) -> Result<(), tokio_postgres::Error> {
         println!("Event found: {:?}", event);
         let block_number = event.block_number as i64;
@@ -103,6 +107,14 @@ impl<'a> Indexer<'a> {
                 data,
             };
             self.process_specific_event(EventType::MarketCreated(market_event)).await?;
+        } else if event.keys.contains(&swap_fees_collected_key) {
+            let swap_fees_event = GenericEvent {
+                block_number,
+                transaction_hash: transaction_hash.clone(),
+                key: key.clone(),
+                data,
+            };
+            self.process_specific_event(EventType::SwapFeesCollected(swap_fees_event)).await?;
         } else {
             println!("Unknown event type: {:?}", event);
         }
@@ -127,6 +139,10 @@ impl<'a> Indexer<'a> {
             EventType::MarketCreated(event) => {
                 let market = MarketCreated::from_generic_event(event);
                 market.insert(&self.client).await?;
+            },
+            EventType::SwapFeesCollected(event) => {
+                let swap_fees = SwapFeesCollected::from_generic_event(event);
+                swap_fees.insert(&self.client).await?;
             },
         }
         Ok(())
