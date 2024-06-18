@@ -14,12 +14,12 @@ pub struct Deposit {
     pub initial_short_token: Option<String>,
     pub long_token_swap_path: Option<String>,
     pub short_token_swap_path: Option<String>,
-    pub initial_long_token_amount: Option<String>,
-    pub initial_short_token_amount: Option<String>,
-    pub min_market_tokens: Option<String>,
-    pub updated_at_block: Option<String>,
-    pub execution_fee: Option<String>,
-    pub callback_gas_limit: Option<String>,
+    pub initial_long_token_amount: Option<i64>,
+    pub initial_short_token_amount: Option<i64>,
+    pub min_market_tokens: Option<i64>,
+    pub updated_at_block: Option<i64>,
+    pub execution_fee: Option<i64>,
+    pub callback_gas_limit: Option<i64>,
 }
 
 
@@ -40,12 +40,12 @@ impl Deposit {
             initial_short_token: data_parts.get(5).cloned().unwrap_or(None),
             long_token_swap_path: data_parts.get(6).cloned().unwrap_or(None),
             short_token_swap_path: data_parts.get(7).cloned().unwrap_or(None),
-            initial_long_token_amount: data_parts.get(8).cloned().unwrap_or(None),
-            initial_short_token_amount: data_parts.get(9).cloned().unwrap_or(None),
-            min_market_tokens: data_parts.get(10).cloned().unwrap_or(None),
-            updated_at_block: data_parts.get(11).cloned().unwrap_or(None),
-            execution_fee: data_parts.get(12).cloned().unwrap_or(None),
-            callback_gas_limit: data_parts.get(13).cloned().unwrap_or(None),
+            initial_long_token_amount: data_parts.get(8).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            initial_short_token_amount: data_parts.get(9).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            min_market_tokens: data_parts.get(10).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            updated_at_block: data_parts.get(11).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            execution_fee: data_parts.get(12).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            callback_gas_limit: data_parts.get(13).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
         }
     }
 

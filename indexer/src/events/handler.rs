@@ -45,7 +45,7 @@ impl<'a> Indexer<'a> {
 
     fn create_event_filter(&self, keys: &[FieldElement]) -> EventFilter {
         EventFilter {
-            from_block: Some(BlockId::Number(64539)),
+            from_block: Some(BlockId::Number(64406)),
             to_block: Some(BlockId::Tag(BlockTag::Latest)),
             address: FieldElement::from_hex_be("0x2cf721c0387704095d6b2205b46e17d7768fa55c2f1a1087425b877b72937db").ok(),
             keys: Some(vec![keys.to_vec()]),
