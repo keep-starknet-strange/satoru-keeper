@@ -11,5 +11,6 @@ pub enum EventType {
     Withdrawal(GenericEvent),
     MarketCreated(GenericEvent),
     SwapFeesCollected(GenericEvent),
-    SwapInfo(GenericEvent)
+    SwapInfo(GenericEvent),
+    PoolAmountUpdated(GenericEvent)
 }

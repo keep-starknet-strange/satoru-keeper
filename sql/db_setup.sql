@@ -111,6 +111,17 @@ CREATE TABLE IF NOT EXISTS swap_info (
     price_impact_amount_sign BOOLEAN
 );
 
+CREATE TABLE IF NOT EXISTS pool_amount_updated (
+    block_number BIGINT NOT NULL,
+    transaction_hash TEXT NOT NULL,
+    key TEXT,
+    market TEXT,
+    token TEXT,
+    delta_mag BIGINT,
+    delta_sign BOOLEAN,
+    next_value BIGINT
+);
+
 -- Drop the existing function and triggers if it exists
 DROP TRIGGER IF EXISTS orders_notify_update ON orders;
 DROP TRIGGER IF EXISTS orders_notify_insert ON orders;
@@ -245,3 +256,30 @@ CREATE TRIGGER swap_info_notify_update AFTER UPDATE ON swap_info FOR EACH ROW EX
 
 -- Add INSERT row trigger
 CREATE TRIGGER swap_info_notify_insert AFTER INSERT ON swap_info FOR EACH ROW EXECUTE PROCEDURE swap_info_update_notify();
+
+-- Drop the existing function and triggers if it exists
+DROP TRIGGER IF EXISTS pool_amount_updated_notify_update ON pool_amount_updated;
+DROP TRIGGER IF EXISTS pool_amount_updated_notify_insert ON pool_amount_updated;
+
+DROP FUNCTION IF EXISTS pool_amount_updated_update_notify();
+
+-- Add a table update notification function
+CREATE OR REPLACE FUNCTION pool_amount_updated_update_notify() RETURNS trigger AS $$
+DECLARE
+  payload json;
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    payload = row_to_json(NEW);
+  ELSE
+    payload = row_to_json(OLD);
+  END IF;
+  PERFORM pg_notify('pool_amount_updated_update', json_build_object('table', TG_TABLE_NAME, 'action_type', TG_OP, 'row_data', payload)::text);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add UPDATE row trigger
+CREATE TRIGGER pool_amount_updated_notify_update AFTER UPDATE ON pool_amount_updated FOR EACH ROW EXECUTE PROCEDURE pool_amount_updated_update_notify();
+
+-- Add INSERT row trigger
+CREATE TRIGGER pool_amount_updated_notify_insert AFTER INSERT ON pool_amount_updated FOR EACH ROW EXECUTE PROCEDURE pool_amount_updated_update_notify();
