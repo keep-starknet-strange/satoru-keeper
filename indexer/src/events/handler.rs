@@ -5,7 +5,8 @@ use starknet::{
 };
 use tokio_postgres::Client;
 use hex;
-use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal, market_created::MarketCreated, swap_fees_collected::SwapFeesCollected, swap_info::SwapInfo, pool_amount_updated::PoolAmountUpdated};
+use crate::events::{event::{GenericEvent, EventType}, order::Order, deposit::Deposit, withdrawal::Withdrawal,
+ market_created::MarketCreated, swap_fees_collected::SwapFeesCollected, swap_info::SwapInfo, pool_amount_updated::PoolAmountUpdated};
 
 
 
@@ -42,7 +43,8 @@ impl<'a> Indexer<'a> {
         match self.provider.get_events(event_filter, None, 100).await {
             Ok(events_page) => {
                 for event in events_page.events {
-                    self.process_event(&event, order_created_key, deposit_created_key, withdrawal_created_key, market_created_key, swap_fees_collected_key).await?;
+                    self.process_event(&event, order_created_key, deposit_created_key, withdrawal_created_key,
+                         market_created_key, swap_fees_collected_key,swap_info_key,pool_amount_updated_key ).await?;
                 }
             },
             Err(e) => {
