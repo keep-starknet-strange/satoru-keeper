@@ -21,7 +21,7 @@ pub fn get_token_name_from_address(token_address: ContractAddress) -> String {
                 .expect("Cannot convert string to felt"),
             ) =>
         {
-            "usd".to_owned()
+            "usdc".to_owned()
         }
         _ => "".to_owned(),
     }
