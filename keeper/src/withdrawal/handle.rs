@@ -1,4 +1,4 @@
-use std::{env, vec, sync::Arc};
+use std::{env, sync::Arc, vec};
 
 use cainome::{
     cairo_serde::{ContractAddress, U256},

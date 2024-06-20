@@ -1,24 +1,45 @@
-use std::{env, vec, sync::Arc};
+use std::{env, sync::Arc, vec};
 
 use cainome::{
     cairo_serde::{ContractAddress, U256},
     rs::abigen,
 };
 use starknet::{
-    accounts::SingleOwnerAccount,
+    accounts::{Account, SingleOwnerAccount},
     core::types::FieldElement,
     providers::jsonrpc::{HttpTransport, JsonRpcClient},
     signers::LocalWallet,
 };
 
 use crate::{
+    price::utils::{get_pragma_price, PathParams, QueryParams},
     types::SatoruAction,
-    price::utils::get_pragma_price
+    utils::get_token_name_from_address,
 };
 
 abigen!(
     OrderHandler,
-    "./resources/satoru_OrderHandler.contract_class.json"
+    "./resources/satoru_OrderHandler.contract_class.json",
+);
+
+abigen!(
+    DataStore,
+    "./resources/satoru_DataStore.contract_class.json",
+    type_aliases {
+        satoru::order::order::OrderType as Order_;
+        satoru::data::data_store::DataStore::Event as Event_;
+        satoru::order::order::DecreasePositionSwapType as Decrease_;
+        satoru::utils::span32::Span32 as Span32_;
+    }
+);
+
+abigen!(
+    Oracle,
+    "./resources/satoru_Oracle.contract_class.json",
+    type_aliases {
+        satoru::price::price::Price as Price_;
+        satoru::oracle::oracle::Oracle::Event as Event__;
+    }
 );
 
 pub async fn handle_order(
@@ -30,7 +51,56 @@ pub async fn handle_order(
     let order_handler = OrderHandler::new(
         FieldElement::from_hex_be(&order_handler_address)
             .expect("Conversion error: order_handler_address"),
-        account,
+        account.clone(),
+    );
+
+    let data_store_address = env::var("DATA_STORE").expect("DATA_STORE env variable not set");
+    let data_store = DataStore::new(
+        FieldElement::from_hex_be(&data_store_address)
+            .expect("Conversion error: data_store_address"),
+        account.clone(),
+    );
+
+    let oracle_address = env::var("ORACLE").expect("ORACLE env variable not set");
+    let oracle = Oracle::new(
+        FieldElement::from_hex_be(&oracle_address).expect("Conversion error: oracle_address"),
+        account.clone(),
+    );
+
+    let market = data_store
+        .get_market(&ContractAddress::from(
+            FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
+        ))
+        .call()
+        .await
+        .expect("Could not get market");
+
+    let path = PathParams {
+        base: get_token_name_from_address(market.long_token).to_owned(),
+        quote: "usd".to_owned(),
+        timestamp: order.block_number, // TODO replace by timestamp
+        interval: "1min".to_owned(),
+    };
+
+    let query = QueryParams {
+        routing: false,
+        aggregation: "median".to_owned(),
+    };
+
+    let price_info = get_pragma_price(path, query)
+        .await
+        .expect("Price did not get returned");
+
+    // Set token price before tx.
+    let price_uint = u128::from_str_radix(price_info.price.as_str(), 16)
+        .expect("Could not convert hex price to uint");
+
+    let set_price_call = oracle.set_primary_price_getcall(
+        &market.long_token,
+        &U256 {
+            low: price_uint,
+            high: 0,
+        },
     );
 
     let set_prices_params: SetPricesParams = SetPricesParams {
@@ -70,14 +140,15 @@ pub async fn handle_order(
         price_feed_tokens: vec![],
     };
 
-    let tx = order_handler
-        .execute_order(
-            &FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
-            &set_prices_params,
-        )
+    let execute_order_call = order_handler.execute_order_getcall(
+        &FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
+        &set_prices_params,
+    );
+
+    let order_execution_multicall = account
+        .execute(vec![set_price_call, execute_order_call])
         .send()
         .await
-        .expect("Order Execution Failed");
-
+        .expect("Order execution multicall failed");
     // TODO: poll transaction status
 }
