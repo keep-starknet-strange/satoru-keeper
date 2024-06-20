@@ -6,29 +6,32 @@ use std::env;
 use super::error::PragmaAPIError;
 
 #[derive(Deserialize)]
-struct PathParams {
-    base: String,
-    quote: String,
-    timestamp: i64,
-    interval: String,
+pub struct PathParams {
+    pub base: String,
+    pub quote: String,
+    pub timestamp: u64,
+    pub interval: String,
 }
 
 #[derive(Deserialize)]
-struct QueryParams {
-    routing: bool,
-    aggregation: String,
+pub struct QueryParams {
+    pub routing: bool,
+    pub aggregation: String,
 }
 
 #[derive(Deserialize, Debug)]
-struct PriceInfo {
-    decimals: u64,
-    num_sources_aggregated: u64,
-    pair_id: String,
-    price: String,
-    timestamp: u64,
+pub struct PriceInfo {
+    pub decimals: u64,
+    pub num_sources_aggregated: u64,
+    pub pair_id: String,
+    pub price: String,
+    pub timestamp: u64,
 }
 
-pub async fn get_pragma_price(path: PathParams, query: QueryParams) -> Result<PriceInfo, PragmaAPIError> {
+pub async fn get_pragma_price(
+    path: PathParams,
+    query: QueryParams,
+) -> Result<PriceInfo, PragmaAPIError> {
     let api_url = format!(
         "https://api.dev.pragma.build/node/v1/data/{}/{}?interval={}&aggregation={}&timestamp={}",
         path.base, path.quote, path.interval, query.aggregation, path.timestamp
