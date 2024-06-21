@@ -1,7 +1,10 @@
-use tokio_postgres::Client;
-use crate::events::event::GenericEvent;
+use crate::events::event::{Event, GenericEvent};
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use sqlx::postgres::PgPool;
+use std::fmt::Debug;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Order {
     pub block_number: i64,
     pub transaction_hash: String,
@@ -27,11 +30,15 @@ pub struct Order {
     pub is_frozen: Option<bool>,
 }
 
-impl Order {
-    pub const ORDER_KEY: &'static str = "03427759bfd3b941f14e687e129519da3c9b0046c5b9aaa290bb1dede63753b3";
+#[async_trait]
+impl Event for Order {
+    fn event_key() -> &'static str {
+        "03427759bfd3b941f14e687e129519da3c9b0046c5b9aaa290bb1dede63753b3"
+    }
 
-    pub fn from_generic_event(event: GenericEvent) -> Self {
-        let data_parts: Vec<Option<String>> = event.data.split(',').map(|s| Some(s.to_string())).collect();
+    fn from_generic_event(event: GenericEvent) -> Self {
+        let data_parts: Vec<Option<String>> =
+            event.data.split(',').map(|s| Some(s.to_string())).collect();
         Order {
             block_number: event.block_number,
             transaction_hash: event.transaction_hash,
@@ -45,21 +52,41 @@ impl Order {
             market: data_parts.get(6).cloned().unwrap_or(None),
             initial_collateral_token: data_parts.get(7).cloned().unwrap_or(None),
             swap_path: data_parts.get(8).cloned().unwrap_or(None),
-            size_delta_usd: data_parts.get(9).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            initial_collateral_delta_amount: data_parts.get(10).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            trigger_price: data_parts.get(11).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            acceptable_price: data_parts.get(12).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            execution_fee: data_parts.get(13).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            callback_gas_limit: data_parts.get(14).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            min_output_amount: data_parts.get(15).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            updated_at_block: data_parts.get(16).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            is_long: data_parts.get(17).and_then(|s| s.as_ref().map(|v| v.parse::<bool>().ok()).flatten()),
-            is_frozen: data_parts.get(18).and_then(|s| s.as_ref().map(|v| v.parse::<bool>().ok()).flatten()),
+            size_delta_usd: data_parts
+                .get(9)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            initial_collateral_delta_amount: data_parts
+                .get(10)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            trigger_price: data_parts
+                .get(11)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            acceptable_price: data_parts
+                .get(12)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            execution_fee: data_parts
+                .get(13)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            callback_gas_limit: data_parts
+                .get(14)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            min_output_amount: data_parts
+                .get(15)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            updated_at_block: data_parts
+                .get(16)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            is_long: data_parts
+                .get(17)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<bool>().ok()).flatten()),
+            is_frozen: data_parts
+                .get(18)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<bool>().ok()).flatten()),
         }
     }
 
-    pub async fn insert(&self, client: &Client) -> Result<u64, tokio_postgres::Error> {
-        client.execute(
+    async fn insert(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        sqlx::query!(
             "INSERT INTO orders (
                 block_number, transaction_hash, key, order_type, decrease_position_swap_type, account,
                 receiver, callback_contract, ui_fee_receiver, market, initial_collateral_token, swap_path,
@@ -71,15 +98,16 @@ impl Order {
                 $13, $14, $15, $16,
                 $17, $18, $19, $20, $21, $22
             )",
-            &[
-                &self.block_number, &self.transaction_hash, &self.key, &self.order_type, 
-                &self.decrease_position_swap_type, &self.account, &self.receiver, 
-                &self.callback_contract, &self.ui_fee_receiver, &self.market, 
-                &self.initial_collateral_token, &self.swap_path, &self.size_delta_usd, 
-                &self.initial_collateral_delta_amount, &self.trigger_price, &self.acceptable_price, 
-                &self.execution_fee, &self.callback_gas_limit, &self.min_output_amount, 
-                &self.updated_at_block, &self.is_long, &self.is_frozen
-            ],
-        ).await
+                self.block_number, self.transaction_hash, self.key, self.order_type,
+                self.decrease_position_swap_type, self.account, self.receiver,
+                self.callback_contract, self.ui_fee_receiver, self.market,
+                self.initial_collateral_token, self.swap_path, self.size_delta_usd,
+                self.initial_collateral_delta_amount, self.trigger_price, self.acceptable_price,
+                self.execution_fee, self.callback_gas_limit, self.min_output_amount,
+                self.updated_at_block, self.is_long, self.is_frozen,
+            )
+            .execute(pool)
+            .await?;
+        Ok(())
     }
 }
