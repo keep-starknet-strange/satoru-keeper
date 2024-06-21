@@ -2,12 +2,13 @@ use dotenv::dotenv;
 use std::{env, sync::Arc};
 
 use keeper_satoru::{
-    deposit::handle::handle_deposit,
     error::KeeperError,
     listen_db::start_listening,
-    order::handle::handle_order,
+    trade::{
+        deposit::handle::handle_deposit, order::handle::handle_order,
+        withdrawal::handle::handle_withdrawal,
+    },
     types::{ActionType, Payload},
-    withdrawal::handle::handle_withdrawal,
 };
 use starknet::{
     accounts::{ExecutionEncoding, SingleOwnerAccount},
@@ -29,7 +30,7 @@ async fn main() {
     let provider = JsonRpcClient::new(HttpTransport::new(
         Url::parse(
             &env::var("RPC_URL")
-                .or_else(|e| Err(KeeperError::RpcUrlNotSet()))
+                .or_else(|_e| Err(KeeperError::RpcUrlNotSet()))
                 .unwrap(),
         )
         .map_err(|e| KeeperError::ProviderUrlError(format!("invalid rpc url: {}", e)))
@@ -39,7 +40,7 @@ async fn main() {
     let signer = LocalWallet::from(SigningKey::from_secret_scalar(
         FieldElement::from_hex_be(
             &env::var("PRIVATE_KEY")
-                .or_else(|e| Err(KeeperError::PrivateKeyNotSet()))
+                .or_else(|_e| Err(KeeperError::PrivateKeyNotSet()))
                 .unwrap(),
         )
         .expect("Could not convert private key to felt."),
@@ -51,7 +52,7 @@ async fn main() {
             signer,
             FieldElement::from_hex_be(
                 &env::var("PUBLIC_KEY")
-                    .or_else(|e| Err(KeeperError::PublicKeyNotSet()))
+                    .or_else(|_e| Err(KeeperError::PublicKeyNotSet()))
                     .unwrap(),
             )
             .expect("Could not convert private key to felt."),
