@@ -8,7 +8,7 @@ pub enum ActionType {
 }
 
 // A struct that contains all fields of differents user actions (Order, Deposit, Withdrawal).
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct SatoruAction {
     // Shared.
     pub block_number: u64,
