@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use cainome::rs::abigen;
 use log::info;
 use serde::de::DeserializeOwned;
 use sqlx::error::Error;
