@@ -92,6 +92,10 @@ impl<T: Event + Send + Sync> EventProcessor for GenericEventProcessor<T> {
         };
 
         let specific_event = T::from_generic_event(generic_event);
+
+        // Print the event before inserting
+        println!("Inserting event: {:?}", specific_event);
+
         specific_event.insert(pool).await
     }
 }
