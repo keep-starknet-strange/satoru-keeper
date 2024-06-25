@@ -32,7 +32,7 @@ impl<'a> EventIndexer<'a> {
             .collect();
 
         let event_filter = EventFilter {
-            from_block: Some(BlockId::Number(64539)),
+            from_block: Some(BlockId::Number(64538)),
             to_block: Some(BlockId::Tag(BlockTag::Latest)),
             address: Some(
                 FieldElement::from_hex_be(
