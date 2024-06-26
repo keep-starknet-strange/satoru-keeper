@@ -25,6 +25,7 @@ async fn main() -> Result<(), Error> {
         .await?;
 
     let provider = provider::get_provider().unwrap();
+    let from_block = config::get_from_block();
 
     let mut event_processors: HashMap<
         &'static str,
@@ -80,7 +81,7 @@ async fn main() -> Result<(), Error> {
     let indexer = events::handler::EventIndexer::new(&provider, &pool, event_processors);
 
     loop {
-        if let Err(e) = indexer.fetch_and_process_events().await {
+        if let Err(e) = indexer.fetch_and_process_events(from_block).await {
             eprintln!("Error: {:?}", e);
         }
         sleep(Duration::from_secs(10)).await;

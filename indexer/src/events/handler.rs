@@ -24,7 +24,7 @@ impl<'a> EventIndexer<'a> {
         }
     }
 
-    pub async fn fetch_and_process_events(&self) -> Result<(), sqlx::Error> {
+    pub async fn fetch_and_process_events(&self, from_block: u64) -> Result<(), sqlx::Error> {
         let keys: Vec<FieldElement> = self
             .event_processors
             .keys()
@@ -32,7 +32,7 @@ impl<'a> EventIndexer<'a> {
             .collect();
 
         let event_filter = EventFilter {
-            from_block: Some(BlockId::Number(64538)),
+            from_block: Some(BlockId::Number(from_block)),
             to_block: Some(BlockId::Tag(BlockTag::Latest)),
             address: Some(
                 FieldElement::from_hex_be(
@@ -93,7 +93,7 @@ impl<T: Event + Send + Sync> EventProcessor for GenericEventProcessor<T> {
 
         let specific_event = T::from_generic_event(generic_event);
         println!("Inserting event: {:?}", specific_event);
-      
+
         specific_event.insert(pool).await
     }
 }

@@ -42,12 +42,24 @@ impl Event for Withdrawal {
             market: data_parts.get(3).cloned().unwrap_or(None),
             long_token_swap_path: data_parts.get(4).cloned().unwrap_or(None),
             short_token_swap_path: data_parts.get(5).cloned().unwrap_or(None),
-            market_token_amount: data_parts.get(6).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            min_long_token_amount: data_parts.get(7).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            min_short_token_amount: data_parts.get(8).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            updated_at_block: data_parts.get(9).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            execution_fee: data_parts.get(10).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
-            callback_gas_limit: data_parts.get(11).and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            market_token_amount: data_parts
+                .get(6)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            min_long_token_amount: data_parts
+                .get(7)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            min_short_token_amount: data_parts
+                .get(8)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            updated_at_block: data_parts
+                .get(9)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            execution_fee: data_parts
+                .get(10)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
+            callback_gas_limit: data_parts
+                .get(11)
+                .and_then(|s| s.as_ref().map(|v| v.parse::<i64>().ok()).flatten()),
         }
     }
 
