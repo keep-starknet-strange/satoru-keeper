@@ -1,3 +1,4 @@
+use crate::blockchain::head_chain::HeadChain;
 use crate::events::event::{Event, GenericEvent};
 use sqlx::postgres::PgPool;
 use starknet::core::types::{BlockId, BlockTag, EmittedEvent, EventFilter, FieldElement};
@@ -9,6 +10,7 @@ pub struct EventIndexer<'a> {
     provider: &'a JsonRpcClient<HttpTransport>,
     pool: &'a PgPool,
     event_processors: HashMap<&'static str, Box<dyn EventProcessor + Send + Sync>>,
+    head_chain: HeadChain,
 }
 
 impl<'a> EventIndexer<'a> {
@@ -16,11 +18,13 @@ impl<'a> EventIndexer<'a> {
         provider: &'a JsonRpcClient<HttpTransport>,
         pool: &'a PgPool,
         event_processors: HashMap<&'static str, Box<dyn EventProcessor + Send + Sync>>,
+        head_chain: HeadChain,
     ) -> Self {
         EventIndexer {
             provider,
             pool,
             event_processors,
+            head_chain,
         }
     }
 
@@ -53,8 +57,49 @@ impl<'a> EventIndexer<'a> {
             if let Some(key) = event.keys.first() {
                 let key_str = hex::encode(key.to_bytes_be());
                 if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
-                    processor.process_event(event, &self.pool).await?;
+                    processor.process_event(event.clone(), &self.pool).await?;
                 }
+                self.head_chain
+                    .update_last_block_indexed(event.block_number as i64)
+                    .await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn fetch_pending_events(&self) -> Result<(), sqlx::Error> {
+        let event_filter = EventFilter {
+            from_block: Some(BlockId::Tag(BlockTag::Pending)),
+            to_block: Some(BlockId::Tag(BlockTag::Pending)),
+            address: Some(
+                FieldElement::from_hex_be(
+                    "0x2cf721c0387704095d6b2205b46e17d7768fa55c2f1a1087425b877b72937db",
+                )
+                .unwrap(),
+            ),
+            keys: Some(vec![self
+                .event_processors
+                .keys()
+                .map(|key| FieldElement::from_hex_be(key).unwrap())
+                .collect()]),
+        };
+
+        let events_page = self
+            .provider
+            .get_events(event_filter, None, 100)
+            .await
+            .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
+
+        for event in events_page.events {
+            if let Some(key) = event.keys.first() {
+                let key_str = hex::encode(key.to_bytes_be());
+                if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
+                    processor.process_event(event.clone(), &self.pool).await?;
+                }
+                self.head_chain
+                    .update_last_block_indexed(event.block_number as i64)
+                    .await?;
             }
         }
 
