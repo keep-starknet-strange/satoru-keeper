@@ -1,5 +1,12 @@
 \c zohal
 
+CREATE TABLE IF NOT EXISTS last_indexed_block (
+    id SERIAL PRIMARY KEY,
+    block_number BIGINT NOT NULL
+);
+
+INSERT INTO last_indexed_block (block_number) VALUES (0) ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS orders (
     block_number BIGINT NOT NULL,
     transaction_hash TEXT NOT NULL,

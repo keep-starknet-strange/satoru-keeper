@@ -9,8 +9,8 @@ pub struct Order {
     pub block_number: i64,
     pub transaction_hash: String,
     pub key: Option<String>,
-    pub order_type: Option<OrderType>, 
-    pub decrease_position_swap_type: Option<DecreasePositionSwapType>, 
+    pub order_type: Option<OrderType>,
+    pub decrease_position_swap_type: Option<DecreasePositionSwapType>,
     pub account: Option<String>,
     pub receiver: Option<String>,
     pub callback_contract: Option<String>,
@@ -47,14 +47,30 @@ impl std::str::FromStr for OrderType {
 
     fn from_str(input: &str) -> Result<OrderType, Self::Err> {
         match input {
-            "0000000000000000000000000000000000000000000000000000000000000000" => Ok(OrderType::MarketSwap),
-            "0000000000000000000000000000000000000000000000000000000000000001" => Ok(OrderType::LimitSwap),
-            "0000000000000000000000000000000000000000000000000000000000000002" => Ok(OrderType::MarketIncrease),
-            "0000000000000000000000000000000000000000000000000000000000000003" => Ok(OrderType::LimitIncrease),
-            "0000000000000000000000000000000000000000000000000000000000000004" => Ok(OrderType::MarketDecrease),
-            "0000000000000000000000000000000000000000000000000000000000000005" => Ok(OrderType::LimitDecrease),
-            "0000000000000000000000000000000000000000000000000000000000000006" => Ok(OrderType::StopLossDecrease),
-            "0000000000000000000000000000000000000000000000000000000000000007" => Ok(OrderType::Liquidation),
+            "0000000000000000000000000000000000000000000000000000000000000000" => {
+                Ok(OrderType::MarketSwap)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000001" => {
+                Ok(OrderType::LimitSwap)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000002" => {
+                Ok(OrderType::MarketIncrease)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000003" => {
+                Ok(OrderType::LimitIncrease)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000004" => {
+                Ok(OrderType::MarketDecrease)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000005" => {
+                Ok(OrderType::LimitDecrease)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000006" => {
+                Ok(OrderType::StopLossDecrease)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000007" => {
+                Ok(OrderType::Liquidation)
+            }
             _ => Err(()),
         }
     }
@@ -72,9 +88,15 @@ impl std::str::FromStr for DecreasePositionSwapType {
 
     fn from_str(input: &str) -> Result<DecreasePositionSwapType, Self::Err> {
         match input {
-            "0000000000000000000000000000000000000000000000000000000000000000" => Ok(DecreasePositionSwapType::NoSwap),
-            "0000000000000000000000000000000000000000000000000000000000000001" => Ok(DecreasePositionSwapType::SwapPnlTokenToCollateralToken),
-            "0000000000000000000000000000000000000000000000000000000000000002" => Ok(DecreasePositionSwapType::SwapCollateralTokenToPnlToken),
+            "0000000000000000000000000000000000000000000000000000000000000000" => {
+                Ok(DecreasePositionSwapType::NoSwap)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000001" => {
+                Ok(DecreasePositionSwapType::SwapPnlTokenToCollateralToken)
+            }
+            "0000000000000000000000000000000000000000000000000000000000000002" => {
+                Ok(DecreasePositionSwapType::SwapCollateralTokenToPnlToken)
+            }
             _ => Err(()),
         }
     }
@@ -90,21 +112,27 @@ impl Event for Order {
         let data_parts: Vec<Option<String>> =
             event.data.split(',').map(|s| Some(s.to_string())).collect();
 
-        let swap_path_len = data_parts.get(10)
+        let swap_path_len = data_parts
+            .get(10)
             .and_then(|s| s.as_ref().map(|v| v.parse::<usize>().ok()).flatten())
             .unwrap_or(0);
         let swap_path: Vec<String> = (0..swap_path_len)
             .filter_map(|i| data_parts.get(11 + i).cloned().unwrap_or(None))
             .collect();
-        println!("swap_path_len:  {:?}" , swap_path_len);
-        println!("ORDER TYPE:  {:?}" , data_parts.get(2));
+        println!("swap_path_len:  {:?}", swap_path_len);
+        println!("ORDER TYPE:  {:?}", data_parts.get(2));
 
         Order {
             block_number: event.block_number,
             transaction_hash: event.transaction_hash,
             key: data_parts.get(0).cloned().unwrap_or(None),
-            order_type: data_parts.get(2).and_then(|s| s.as_ref().and_then(|v| v.parse::<OrderType>().ok())),
-            decrease_position_swap_type: data_parts.get(3).and_then(|s| s.as_ref().and_then(|v| v.parse::<DecreasePositionSwapType>().ok())),
+            order_type: data_parts
+                .get(2)
+                .and_then(|s| s.as_ref().and_then(|v| v.parse::<OrderType>().ok())),
+            decrease_position_swap_type: data_parts.get(3).and_then(|s| {
+                s.as_ref()
+                    .and_then(|v| v.parse::<DecreasePositionSwapType>().ok())
+            }),
             account: data_parts.get(4).cloned().unwrap_or(None),
             receiver: data_parts.get(5).cloned().unwrap_or(None),
             callback_contract: data_parts.get(6).cloned().unwrap_or(None),
@@ -113,15 +141,22 @@ impl Event for Order {
             initial_collateral_token: data_parts.get(9).cloned().unwrap_or(None),
             swap_path: Some(swap_path),
             size_delta_usd: data_parts.get(11 + swap_path_len).cloned().unwrap_or(None),
-            initial_collateral_delta_amount: data_parts.get(13 + swap_path_len).cloned().unwrap_or(None),
+            initial_collateral_delta_amount: data_parts
+                .get(13 + swap_path_len)
+                .cloned()
+                .unwrap_or(None),
             trigger_price: data_parts.get(15 + swap_path_len).cloned().unwrap_or(None),
             acceptable_price: data_parts.get(17 + swap_path_len).cloned().unwrap_or(None),
             execution_fee: data_parts.get(19 + swap_path_len).cloned().unwrap_or(None),
             callback_gas_limit: data_parts.get(21 + swap_path_len).cloned().unwrap_or(None),
             min_output_amount: data_parts.get(23 + swap_path_len).cloned().unwrap_or(None),
             updated_at_block: data_parts.get(25 + swap_path_len).cloned().unwrap_or(None),
-            is_long: data_parts.get(26 + swap_path_len).and_then(|s| s.as_ref().and_then(|v| v.parse::<bool>().ok())),
-            is_frozen: data_parts.get(27 + swap_path_len).and_then(|s| s.as_ref().and_then(|v| v.parse::<bool>().ok())),
+            is_long: data_parts
+                .get(26 + swap_path_len)
+                .and_then(|s| s.as_ref().and_then(|v| v.parse::<bool>().ok())),
+            is_frozen: data_parts
+                .get(27 + swap_path_len)
+                .and_then(|s| s.as_ref().and_then(|v| v.parse::<bool>().ok())),
         }
     }
 
