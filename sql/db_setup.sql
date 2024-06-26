@@ -129,6 +129,14 @@ CREATE TABLE IF NOT EXISTS pool_amount_updated (
     next_value BIGINT
 );
 
+CREATE TABLE IF NOT EXISTS order_executed (
+    block_number BIGINT NOT NULL,
+    transaction_hash TEXT NOT NULL,
+    key TEXT,
+    secondary_order_type TEXT,
+    PRIMARY KEY (block_number, transaction_hash)
+);
+
 -- Drop the existing function and triggers if it exists
 DROP TRIGGER IF EXISTS orders_notify_update ON orders;
 DROP TRIGGER IF EXISTS orders_notify_insert ON orders;
