@@ -21,8 +21,23 @@ use url::Url;
 
 #[tokio::main]
 async fn main() {
+    let args: Vec<String> = env::args().collect();
+
     dotenv().ok();
 
+    match args[1].as_str() {
+        "liquidation" => {
+        },
+        "execution" => {
+            execution_mode().await
+        }
+        _ => {
+            panic!("Wrong launch parameter")
+        }
+    }
+}
+
+async fn execution_mode() {
     let pool = sqlx::PgPool::connect("postgres://postgres:123@localhost:5432/zohal")
         .await
         .unwrap();

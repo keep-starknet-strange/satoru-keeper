@@ -10,4 +10,6 @@ pub enum KeeperError {
     PrivateKeyNotSet(),
     #[error("PUBLIC_KEY not set")]
     PublicKeyNotSet(),
+    #[error("Wrong launch params")]
+    WrongParam(),
 }
