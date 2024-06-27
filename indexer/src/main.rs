@@ -12,9 +12,9 @@ use tokio::time::{sleep, Duration};
 use crate::blockchain::head_chain::HeadChain;
 use crate::events::event::Event;
 use crate::events::{
-    deposit::Deposit, market_created::MarketCreated, order::Order,
+    deposit::Deposit, market_created::MarketCreated, order::Order, order_executed::OrderExecuted,
     pool_amount_updated::PoolAmountUpdated, swap_fees_collected::SwapFeesCollected,
-    swap_info::SwapInfo, withdrawal::Withdrawal, order_executed::OrderExecuted
+    swap_info::SwapInfo, withdrawal::Withdrawal,
 };
 
 #[tokio::main]

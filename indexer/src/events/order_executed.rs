@@ -36,7 +36,10 @@ impl Event for OrderExecuted {
             ) VALUES (
                 $1, $2, $3, $4
             )",
-            self.block_number, self.transaction_hash, self.key, self.secondary_order_type
+            self.block_number,
+            self.transaction_hash,
+            self.key,
+            self.secondary_order_type
         )
         .execute(pool)
         .await?;
