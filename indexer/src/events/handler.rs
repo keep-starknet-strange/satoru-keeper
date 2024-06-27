@@ -1,3 +1,4 @@
+use crate::config::get_contract_address;
 use crate::blockchain::head_chain::HeadChain;
 use crate::events::event::{Event, GenericEvent};
 use sqlx::postgres::PgPool;
@@ -35,15 +36,11 @@ impl<'a> EventIndexer<'a> {
             .map(|key| FieldElement::from_hex_be(key).unwrap())
             .collect();
 
+        let contract_address = FieldElement::from_hex_be(&get_contract_address()).unwrap();
         let event_filter = EventFilter {
             from_block: Some(BlockId::Number(from_block)),
             to_block: Some(BlockId::Tag(BlockTag::Latest)),
-            address: Some(
-                FieldElement::from_hex_be(
-                    "0x2cf721c0387704095d6b2205b46e17d7768fa55c2f1a1087425b877b72937db",
-                )
-                .unwrap(),
-            ),
+            address: Some(contract_address),
             keys: Some(vec![keys]),
         };
 
