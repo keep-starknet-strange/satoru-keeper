@@ -20,17 +20,18 @@ CREATE TABLE IF NOT EXISTS orders (
     market TEXT,
     initial_collateral_token TEXT,
     swap_path TEXT,
-    size_delta_usd TEXT,
-    initial_collateral_delta_amount TEXT,
-    trigger_price TEXT,
-    acceptable_price TEXT,
-    execution_fee TEXT,
-    callback_gas_limit TEXT,
-    min_output_amount TEXT,
-    updated_at_block TEXT,
+    size_delta_usd NUMERIC,
+    initial_collateral_delta_amount NUMERIC,
+    trigger_price NUMERIC,
+    acceptable_price NUMERIC,
+    execution_fee NUMERIC,
+    callback_gas_limit NUMERIC,
+    min_output_amount NUMERIC,
+    updated_at_block BIGINT,
     is_long BOOLEAN,
     is_frozen BOOLEAN
 );
+
 CREATE TABLE IF NOT EXISTS deposits (
     block_number BIGINT NOT NULL,
     transaction_hash TEXT NOT NULL,

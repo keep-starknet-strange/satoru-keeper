@@ -1,8 +1,10 @@
 use crate::events::event::{Event, GenericEvent};
 use async_trait::async_trait;
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use std::fmt::Debug;
+use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Order {
@@ -18,14 +20,14 @@ pub struct Order {
     pub market: Option<String>,
     pub initial_collateral_token: Option<String>,
     pub swap_path: Option<Vec<String>>,
-    pub size_delta_usd: Option<String>,
-    pub initial_collateral_delta_amount: Option<String>,
-    pub trigger_price: Option<String>,
-    pub acceptable_price: Option<String>,
-    pub execution_fee: Option<String>,
-    pub callback_gas_limit: Option<String>,
-    pub min_output_amount: Option<String>,
-    pub updated_at_block: Option<String>,
+    pub size_delta_usd: Option<BigDecimal>,
+    pub initial_collateral_delta_amount: Option<BigDecimal>,
+    pub trigger_price: Option<BigDecimal>,
+    pub acceptable_price: Option<BigDecimal>,
+    pub execution_fee: Option<BigDecimal>,
+    pub callback_gas_limit: Option<BigDecimal>,
+    pub min_output_amount: Option<BigDecimal>,
+    pub updated_at_block: Option<i64>,
     pub is_long: Option<bool>,
     pub is_frozen: Option<bool>,
 }
@@ -47,30 +49,14 @@ impl std::str::FromStr for OrderType {
 
     fn from_str(input: &str) -> Result<OrderType, Self::Err> {
         match input {
-            "0000000000000000000000000000000000000000000000000000000000000000" => {
-                Ok(OrderType::MarketSwap)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000001" => {
-                Ok(OrderType::LimitSwap)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000002" => {
-                Ok(OrderType::MarketIncrease)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000003" => {
-                Ok(OrderType::LimitIncrease)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000004" => {
-                Ok(OrderType::MarketDecrease)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000005" => {
-                Ok(OrderType::LimitDecrease)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000006" => {
-                Ok(OrderType::StopLossDecrease)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000007" => {
-                Ok(OrderType::Liquidation)
-            }
+            "0000000000000000000000000000000000000000000000000000000000000000" => Ok(OrderType::MarketSwap),
+            "0000000000000000000000000000000000000000000000000000000000000001" => Ok(OrderType::LimitSwap),
+            "0000000000000000000000000000000000000000000000000000000000000002" => Ok(OrderType::MarketIncrease),
+            "0000000000000000000000000000000000000000000000000000000000000003" => Ok(OrderType::LimitIncrease),
+            "0000000000000000000000000000000000000000000000000000000000000004" => Ok(OrderType::MarketDecrease),
+            "0000000000000000000000000000000000000000000000000000000000000005" => Ok(OrderType::LimitDecrease),
+            "0000000000000000000000000000000000000000000000000000000000000006" => Ok(OrderType::StopLossDecrease),
+            "0000000000000000000000000000000000000000000000000000000000000007" => Ok(OrderType::Liquidation),
             _ => Err(()),
         }
     }
@@ -88,15 +74,9 @@ impl std::str::FromStr for DecreasePositionSwapType {
 
     fn from_str(input: &str) -> Result<DecreasePositionSwapType, Self::Err> {
         match input {
-            "0000000000000000000000000000000000000000000000000000000000000000" => {
-                Ok(DecreasePositionSwapType::NoSwap)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000001" => {
-                Ok(DecreasePositionSwapType::SwapPnlTokenToCollateralToken)
-            }
-            "0000000000000000000000000000000000000000000000000000000000000002" => {
-                Ok(DecreasePositionSwapType::SwapCollateralTokenToPnlToken)
-            }
+            "0000000000000000000000000000000000000000000000000000000000000000" => Ok(DecreasePositionSwapType::NoSwap),
+            "0000000000000000000000000000000000000000000000000000000000000001" => Ok(DecreasePositionSwapType::SwapPnlTokenToCollateralToken),
+            "0000000000000000000000000000000000000000000000000000000000000002" => Ok(DecreasePositionSwapType::SwapCollateralTokenToPnlToken),
             _ => Err(()),
         }
     }
@@ -109,30 +89,17 @@ impl Event for Order {
     }
 
     fn from_generic_event(event: GenericEvent) -> Self {
-        let data_parts: Vec<Option<String>> =
-            event.data.split(',').map(|s| Some(s.to_string())).collect();
+        let data_parts: Vec<Option<String>> = event.data.split(',').map(|s| Some(s.to_string())).collect();
 
-        let swap_path_len = data_parts
-            .get(10)
-            .and_then(|s| s.as_ref().map(|v| v.parse::<usize>().ok()).flatten())
-            .unwrap_or(0);
-        let swap_path: Vec<String> = (0..swap_path_len)
-            .filter_map(|i| data_parts.get(11 + i).cloned().unwrap_or(None))
-            .collect();
-        println!("swap_path_len:  {:?}", swap_path_len);
-        println!("ORDER TYPE:  {:?}", data_parts.get(2));
+        let swap_path_len = data_parts.get(10).and_then(|s| s.as_ref().map(|v| v.parse::<usize>().ok()).flatten()).unwrap_or(0);
+        let swap_path: Vec<String> = (0..swap_path_len).filter_map(|i| data_parts.get(11 + i).cloned().unwrap_or(None)).collect();
 
         Order {
             block_number: event.block_number,
             transaction_hash: event.transaction_hash,
             key: data_parts.get(0).cloned().unwrap_or(None),
-            order_type: data_parts
-                .get(2)
-                .and_then(|s| s.as_ref().and_then(|v| v.parse::<OrderType>().ok())),
-            decrease_position_swap_type: data_parts.get(3).and_then(|s| {
-                s.as_ref()
-                    .and_then(|v| v.parse::<DecreasePositionSwapType>().ok())
-            }),
+            order_type: data_parts.get(2).and_then(|s| s.as_ref().and_then(|v| v.parse::<OrderType>().ok())),
+            decrease_position_swap_type: data_parts.get(3).and_then(|s| s.as_ref().and_then(|v| v.parse::<DecreasePositionSwapType>().ok())),
             account: data_parts.get(4).cloned().unwrap_or(None),
             receiver: data_parts.get(5).cloned().unwrap_or(None),
             callback_contract: data_parts.get(6).cloned().unwrap_or(None),
@@ -140,23 +107,24 @@ impl Event for Order {
             market: data_parts.get(8).cloned().unwrap_or(None),
             initial_collateral_token: data_parts.get(9).cloned().unwrap_or(None),
             swap_path: Some(swap_path),
-            size_delta_usd: data_parts.get(11 + swap_path_len).cloned().unwrap_or(None),
-            initial_collateral_delta_amount: data_parts
-                .get(13 + swap_path_len)
-                .cloned()
-                .unwrap_or(None),
-            trigger_price: data_parts.get(15 + swap_path_len).cloned().unwrap_or(None),
-            acceptable_price: data_parts.get(17 + swap_path_len).cloned().unwrap_or(None),
-            execution_fee: data_parts.get(19 + swap_path_len).cloned().unwrap_or(None),
-            callback_gas_limit: data_parts.get(21 + swap_path_len).cloned().unwrap_or(None),
-            min_output_amount: data_parts.get(23 + swap_path_len).cloned().unwrap_or(None),
-            updated_at_block: data_parts.get(25 + swap_path_len).cloned().unwrap_or(None),
-            is_long: data_parts
-                .get(26 + swap_path_len)
-                .and_then(|s| s.as_ref().and_then(|v| v.parse::<bool>().ok())),
-            is_frozen: data_parts
-                .get(27 + swap_path_len)
-                .and_then(|s| s.as_ref().and_then(|v| v.parse::<bool>().ok())),
+            size_delta_usd: combine_u128(data_parts.get(11 + swap_path_len), data_parts.get(12 + swap_path_len)),
+            initial_collateral_delta_amount: combine_u128(data_parts.get(13 + swap_path_len), data_parts.get(14 + swap_path_len)),
+            trigger_price: combine_u128(data_parts.get(15 + swap_path_len), data_parts.get(16 + swap_path_len)),
+            acceptable_price: combine_u128(data_parts.get(17 + swap_path_len), data_parts.get(18 + swap_path_len)),
+            execution_fee: combine_u128(data_parts.get(19 + swap_path_len), data_parts.get(20 + swap_path_len)),
+            callback_gas_limit: combine_u128(data_parts.get(21 + swap_path_len), data_parts.get(22 + swap_path_len)),
+            min_output_amount: combine_u128(data_parts.get(23 + swap_path_len), data_parts.get(24 + swap_path_len)),
+            updated_at_block: data_parts.get(25 + swap_path_len).and_then(|s| s.as_ref().and_then(|v| i64::from_str_radix(v, 16).ok())),
+            is_long: data_parts.get(26 + swap_path_len).and_then(|s| s.as_ref().map(|v| match v.as_str() {
+                "0000000000000000000000000000000000000000000000000000000000000000" => false,
+                "0000000000000000000000000000000000000000000000000000000000000001" => true,
+                _ => false,
+            })),
+            is_frozen: data_parts.get(27 + swap_path_len).and_then(|s| s.as_ref().map(|v| match v.as_str() {
+                "0000000000000000000000000000000000000000000000000000000000000000" => false,
+                "0000000000000000000000000000000000000000000000000000000000000001" => true,
+                _ => false,
+            })),
         }
     }
 
@@ -195,9 +163,21 @@ impl Event for Order {
             self.updated_at_block,
             self.is_long,
             self.is_frozen
-            )
-            .execute(pool)
-            .await?;
+        )
+        .execute(pool)
+        .await?;
         Ok(())
     }
+}
+
+fn combine_u128(high: Option<&Option<String>>, low: Option<&Option<String>>) -> Option<BigDecimal> {
+    if let (Some(high), Some(low)) = (high, low) {
+        if let (Some(high), Some(low)) = (high, low) {
+            if let (Ok(high), Ok(low)) = (u64::from_str_radix(high, 16), u64::from_str_radix(low, 16)) {
+                let combined = ((high as u128) << 64) + low as u128;
+                return Some(BigDecimal::from_str(&combined.to_string()).unwrap());
+            }
+        }
+    }
+    None
 }

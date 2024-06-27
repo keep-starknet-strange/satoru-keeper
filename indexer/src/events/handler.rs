@@ -1,5 +1,5 @@
-use crate::config::get_contract_address;
 use crate::blockchain::head_chain::HeadChain;
+use crate::config::get_contract_address;
 use crate::events::event::{Event, GenericEvent};
 use sqlx::postgres::PgPool;
 use starknet::core::types::{BlockId, BlockTag, EmittedEvent, EventFilter, FieldElement};
