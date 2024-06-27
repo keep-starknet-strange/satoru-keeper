@@ -14,3 +14,7 @@ pub fn get_from_block() -> u64 {
         .parse::<u64>()
         .expect("FROM_BLOCK must be a valid u64 number")
 }
+
+pub fn get_contract_address() -> String {
+    env::var("CONTRACT_ADDRESS").expect("CONTRACT_ADDRESS must be set")
+}
