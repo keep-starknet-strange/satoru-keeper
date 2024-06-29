@@ -36,12 +36,12 @@ pub fn get_token_name_from_address(token_address: ContractAddress) -> String {
         {
             "usdc".to_owned()
         }
-        _ => "".to_owned(),
+        _ => "eth".to_owned(), // TODO throw error on this
     }
 }
 
 pub async fn get_set_primary_price_call(
-    withdrawal: SatoruAction,
+    trade: SatoruAction,
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
 ) -> Call {
     let data_store_address = env::var("DATA_STORE").expect("DATA_STORE env variable not set");
@@ -59,13 +59,13 @@ pub async fn get_set_primary_price_call(
 
     let market = data_store
         .get_market(&ContractAddress::from(
-            FieldElement::from_hex_be(&withdrawal.key).expect("Cannot convert string to felt"),
+            FieldElement::from_hex_be(&trade.key).expect("Cannot convert string to felt"),
         ))
         .call()
         .await
         .expect("Could not get market");
 
-    let price = price_setup(withdrawal.block_number, market.clone()).await; // TODO use timestamp instead of block number
+    let price = price_setup(trade.block_number, market.clone()).await; // TODO use timestamp instead of block number
 
     oracle.set_primary_price_getcall(&market.long_token, &price)
 }
