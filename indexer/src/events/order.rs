@@ -9,6 +9,7 @@ use std::str::FromStr;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Order {
     pub block_number: i64,
+    pub timestamp: Option<String>,
     pub transaction_hash: String,
     pub key: Option<String>,
     pub order_type: Option<OrderType>,
@@ -96,6 +97,7 @@ impl Event for Order {
 
         Order {
             block_number: event.block_number,
+            timestamp: event.timestamp,
             transaction_hash: event.transaction_hash,
             key: data_parts.get(0).cloned().unwrap_or(None),
             order_type: data_parts.get(2).and_then(|s| s.as_ref().and_then(|v| v.parse::<OrderType>().ok())),
@@ -131,7 +133,7 @@ impl Event for Order {
     async fn insert(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "INSERT INTO orders (
-                block_number, transaction_hash, key, order_type, decrease_position_swap_type, account,
+                block_number, time_stamp, transaction_hash, key, order_type, decrease_position_swap_type, account,
                 receiver, callback_contract, ui_fee_receiver, market, initial_collateral_token, swap_path,
                 size_delta_usd, initial_collateral_delta_amount, trigger_price, acceptable_price,
                 execution_fee, callback_gas_limit, min_output_amount, updated_at_block, is_long, is_frozen
@@ -139,9 +141,10 @@ impl Event for Order {
                 $1, $2, $3, $4, $5, $6,
                 $7, $8, $9, $10, $11, $12,
                 $13, $14, $15, $16,
-                $17, $18, $19, $20, $21, $22
+                $17, $18, $19, $20, $21, $22, $23
             )",
             self.block_number,
+            self.timestamp,
             self.transaction_hash,
             self.key,
             self.order_type.as_ref().map(|ot| format!("{:?}", ot)),

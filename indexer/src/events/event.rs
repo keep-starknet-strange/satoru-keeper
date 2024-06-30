@@ -10,9 +10,10 @@ pub trait Event: Debug + Serialize + for<'de> Deserialize<'de> {
     async fn insert(&self, pool: &PgPool) -> Result<(), sqlx::Error>;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GenericEvent {
     pub block_number: i64,
+    pub timestamp: Option<String>,
     pub transaction_hash: String,
     pub key: Option<String>,
     pub data: String,

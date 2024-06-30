@@ -2,7 +2,7 @@ use crate::blockchain::head_chain::HeadChain;
 use crate::config::get_contract_address;
 use crate::events::event::{Event, GenericEvent};
 use sqlx::postgres::PgPool;
-use starknet::core::types::{BlockId, BlockTag, EmittedEvent, EventFilter, FieldElement};
+use starknet::core::types::{BlockId, BlockTag, EventFilter, FieldElement, MaybePendingBlockWithTxHashes};
 use starknet::providers::jsonrpc::{HttpTransport, JsonRpcClient};
 use starknet::providers::Provider;
 use std::collections::HashMap;
@@ -51,14 +51,24 @@ impl<'a> EventIndexer<'a> {
             .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
 
         for event in events_page.events {
+            let block = self.provider.get_block_with_tx_hashes(BlockId::Number(event.block_number)).await.unwrap();
+            let timestamp = match block {
+                MaybePendingBlockWithTxHashes::Block(block) => Some(block.timestamp.to_string()),
+                MaybePendingBlockWithTxHashes::PendingBlock(block) => Some(block.timestamp.to_string()),
+            };
+            let generic_event = GenericEvent {
+                block_number: event.block_number as i64,
+                timestamp,
+                transaction_hash: hex::encode(event.transaction_hash.to_bytes_be()),
+                key: event.keys.first().map(|k| hex::encode(k.to_bytes_be())),
+                data: event.data.iter().map(|fe| hex::encode(fe.to_bytes_be())).collect::<Vec<_>>().join(","),
+            };
             if let Some(key) = event.keys.first() {
                 let key_str = hex::encode(key.to_bytes_be());
                 if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
-                    processor.process_event(event.clone(), &self.pool).await?;
+                    processor.process_event(generic_event.clone(), &self.pool).await?;
                 }
-                self.head_chain
-                    .update_last_block_indexed(event.block_number as i64)
-                    .await?;
+                self.head_chain.update_last_block_indexed(event.block_number as i64).await?;
             }
         }
 
@@ -89,14 +99,24 @@ impl<'a> EventIndexer<'a> {
             .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
 
         for event in events_page.events {
+            let block = self.provider.get_block_with_tx_hashes(BlockId::Number(event.block_number)).await.unwrap();
+            let timestamp = match block {
+                MaybePendingBlockWithTxHashes::Block(block) => Some(block.timestamp.to_string()),
+                MaybePendingBlockWithTxHashes::PendingBlock(block) => Some(block.timestamp.to_string()),
+            };
+            let generic_event = GenericEvent {
+                block_number: event.block_number as i64,
+                timestamp,
+                transaction_hash: hex::encode(event.transaction_hash.to_bytes_be()),
+                key: event.keys.first().map(|k| hex::encode(k.to_bytes_be())),
+                data: event.data.iter().map(|fe| hex::encode(fe.to_bytes_be())).collect::<Vec<_>>().join(","),
+            };
             if let Some(key) = event.keys.first() {
                 let key_str = hex::encode(key.to_bytes_be());
                 if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
-                    processor.process_event(event.clone(), &self.pool).await?;
+                    processor.process_event(generic_event.clone(), &self.pool).await?;
                 }
-                self.head_chain
-                    .update_last_block_indexed(event.block_number as i64)
-                    .await?;
+                self.head_chain.update_last_block_indexed(event.block_number as i64).await?;
             }
         }
 
@@ -106,7 +126,7 @@ impl<'a> EventIndexer<'a> {
 
 #[async_trait::async_trait]
 pub trait EventProcessor {
-    async fn process_event(&self, event: EmittedEvent, pool: &PgPool) -> Result<(), sqlx::Error>;
+    async fn process_event(&self, event: GenericEvent, pool: &PgPool) -> Result<(), sqlx::Error>;
 }
 
 pub struct GenericEventProcessor<T: Event + Send + Sync> {
@@ -115,27 +135,9 @@ pub struct GenericEventProcessor<T: Event + Send + Sync> {
 
 #[async_trait::async_trait]
 impl<T: Event + Send + Sync> EventProcessor for GenericEventProcessor<T> {
-    async fn process_event(&self, event: EmittedEvent, pool: &PgPool) -> Result<(), sqlx::Error> {
-        let block_number = event.block_number as i64;
-        let transaction_hash = hex::encode(event.transaction_hash.to_bytes_be());
-        let key = event.keys.first().map(|k| hex::encode(k.to_bytes_be()));
-        let data = event
-            .data
-            .iter()
-            .map(|fe| hex::encode(fe.to_bytes_be()))
-            .collect::<Vec<_>>()
-            .join(",");
-
-        let generic_event = GenericEvent {
-            block_number,
-            transaction_hash,
-            key,
-            data,
-        };
-
-        let specific_event = T::from_generic_event(generic_event);
+    async fn process_event(&self, event: GenericEvent, pool: &PgPool) -> Result<(), sqlx::Error> {
+        let specific_event = T::from_generic_event(event);
         println!("Inserting event: {:?}", specific_event);
-
         specific_event.insert(pool).await
     }
 }
