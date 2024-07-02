@@ -128,7 +128,7 @@ mod tests {
                     ),
                 };
 
-                let price = price_setup(1711110660, market).await;
+                let price = price_setup("1711110660".to_owned(), market).await;
 
                 assert!(price > U256 { low: 3000, high: 0 })
             }
