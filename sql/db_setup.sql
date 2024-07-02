@@ -9,6 +9,7 @@ INSERT INTO last_indexed_block (block_number) VALUES (0) ON CONFLICT (id) DO NOT
 
 CREATE TABLE IF NOT EXISTS orders (
     block_number BIGINT NOT NULL,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     order_type TEXT,
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE TABLE IF NOT EXISTS deposits (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     account TEXT,
@@ -55,7 +56,7 @@ CREATE TABLE IF NOT EXISTS deposits (
 );
 CREATE TABLE IF NOT EXISTS withdrawals (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     account TEXT,
@@ -75,7 +76,7 @@ CREATE TABLE IF NOT EXISTS withdrawals (
 
 CREATE TABLE IF NOT EXISTS market_created (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     creator TEXT,
@@ -88,7 +89,7 @@ CREATE TABLE IF NOT EXISTS market_created (
 
 CREATE TABLE IF NOT EXISTS swap_fees_collected (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     market TEXT,
@@ -105,7 +106,7 @@ CREATE TABLE IF NOT EXISTS swap_fees_collected (
 
 CREATE TABLE IF NOT EXISTS swap_info (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     order_key TEXT,
@@ -126,7 +127,7 @@ CREATE TABLE IF NOT EXISTS swap_info (
 
 CREATE TABLE IF NOT EXISTS pool_amount_updated (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     market TEXT,
@@ -138,7 +139,7 @@ CREATE TABLE IF NOT EXISTS pool_amount_updated (
 
 CREATE TABLE IF NOT EXISTS order_executed (
     block_number BIGINT NOT NULL,
-    time_stamp TEXT,
+    timestamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     secondary_order_type TEXT,

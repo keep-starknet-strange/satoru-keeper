@@ -65,7 +65,7 @@ pub async fn get_set_primary_price_call(
         .await
         .expect("Could not get market");
 
-    let price = price_setup(trade.block_number, market.clone()).await; // TODO use timestamp instead of block number
+    let price = price_setup(trade.timestamp, market.clone()).await;
 
     oracle.set_primary_price_getcall(&market.long_token, &price)
 }
