@@ -2,6 +2,7 @@
 
 INSERT INTO orders (
     block_number,
+    timestamp,
     transaction_hash,
     key,
     order_type,
@@ -25,6 +26,7 @@ INSERT INTO orders (
     is_frozen
 ) VALUES (
     123456,                                  -- block_number
+    "170882982000"                           -- timestamp
     '0xabc123...',                           -- transaction_hash
     'some-key',                              -- key
     'buy',                                   -- order_type

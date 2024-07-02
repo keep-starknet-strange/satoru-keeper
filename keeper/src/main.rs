@@ -26,11 +26,8 @@ async fn main() {
     dotenv().ok();
 
     match args[1].as_str() {
-        "liquidation" => {
-        },
-        "execution" => {
-            execution_mode().await
-        }
+        "liquidation" => {}
+        "execution" => execution_mode().await,
         _ => {
             panic!("Wrong launch parameter")
         }
