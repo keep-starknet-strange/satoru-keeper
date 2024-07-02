@@ -9,7 +9,7 @@ INSERT INTO last_indexed_block (block_number) VALUES (0) ON CONFLICT (id) DO NOT
 
 CREATE TABLE IF NOT EXISTS orders (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     order_type TEXT,

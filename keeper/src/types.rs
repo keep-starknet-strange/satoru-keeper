@@ -12,7 +12,7 @@ pub enum ActionType {
 pub struct SatoruAction {
     // Shared.
     pub block_number: u64,
-    pub timestamp: u64,
+    pub time_stamp: String,
     pub transaction_hash: String,
     pub key: String,
     pub account: String,

@@ -9,7 +9,7 @@ use super::error::PragmaAPIError;
 pub struct PathParams {
     pub base: String,
     pub quote: String,
-    pub timestamp: u64,
+    pub timestamp: String,
     pub interval: String,
 }
 

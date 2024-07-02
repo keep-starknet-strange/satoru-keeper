@@ -65,12 +65,12 @@ pub async fn get_set_primary_price_call(
         .await
         .expect("Could not get market");
 
-    let price = price_setup(trade.timestamp, market.clone()).await;
+    let price = price_setup(trade.time_stamp, market.clone()).await;
 
     oracle.set_primary_price_getcall(&market.long_token, &price)
 }
 
-pub async fn price_setup(timestamp: u64, market: Market) -> U256 {
+pub async fn price_setup(timestamp: String, market: Market) -> U256 {
     let path = PathParams {
         base: get_token_name_from_address(market.long_token).to_owned(),
         quote: "usd".to_owned(),
