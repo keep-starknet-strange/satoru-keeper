@@ -74,7 +74,7 @@ pub async fn price_setup(timestamp: String, market: Market) -> U256 {
     let path = PathParams {
         base: get_token_name_from_address(market.long_token).to_owned(),
         quote: "usd".to_owned(),
-        timestamp: timestamp,
+        timestamp,
         interval: "1min".to_owned(),
     };
 

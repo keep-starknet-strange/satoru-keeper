@@ -42,7 +42,7 @@ async fn execution_mode() {
     let provider = JsonRpcClient::new(HttpTransport::new(
         Url::parse(
             &env::var("RPC_URL")
-                .or_else(|_e| Err(KeeperError::RpcUrlNotSet()))
+                .map_err(|_e| KeeperError::RpcUrlNotSet())
                 .unwrap(),
         )
         .map_err(|e| KeeperError::ProviderUrlError(format!("invalid rpc url: {}", e)))
@@ -52,7 +52,7 @@ async fn execution_mode() {
     let signer = LocalWallet::from(SigningKey::from_secret_scalar(
         FieldElement::from_hex_be(
             &env::var("PRIVATE_KEY")
-                .or_else(|_e| Err(KeeperError::PrivateKeyNotSet()))
+                .map_err(|_e| KeeperError::PrivateKeyNotSet())
                 .unwrap(),
         )
         .expect("Could not convert private key to felt."),
@@ -64,7 +64,7 @@ async fn execution_mode() {
             signer,
             FieldElement::from_hex_be(
                 &env::var("PUBLIC_KEY")
-                    .or_else(|_e| Err(KeeperError::PublicKeyNotSet()))
+                    .map_err(|_e| KeeperError::PublicKeyNotSet())
                     .unwrap(),
             )
             .expect("Could not convert private key to felt."),

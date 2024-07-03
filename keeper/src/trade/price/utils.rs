@@ -47,7 +47,7 @@ async fn fetch_data(url: &str) -> Result<PriceInfo, PragmaAPIError> {
     dotenv().ok();
 
     let client = reqwest::Client::new();
-    let api_key = env::var("PRAGMA_API_KEY").or_else(|_e| Err(PragmaAPIError::APIKeyNotSet()))?;
+    let api_key = env::var("PRAGMA_API_KEY").map_err(|_e| PragmaAPIError::APIKeyNotSet())?;
     if api_key.is_empty() {
         return Err(PragmaAPIError::APIKeyNotSet());
     }
