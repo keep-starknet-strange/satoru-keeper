@@ -11,13 +11,7 @@ use starknet::{
     signers::LocalWallet,
 };
 
-use crate::{
-    trade::{
-        price::utils::get_pragma_price,
-        utils::{get_set_primary_price_call, price_setup},
-    },
-    types::SatoruAction,
-};
+use crate::{trade::utils::price_setup, types::SatoruAction};
 
 abigen!(
     OrderHandler,

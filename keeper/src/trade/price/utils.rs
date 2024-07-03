@@ -36,6 +36,7 @@ pub async fn get_pragma_price(
         "https://api.dev.pragma.build/node/v1/data/{}/{}?interval={}&aggregation={}&timestamp={}",
         path.base, path.quote, path.interval, query.aggregation, path.timestamp
     );
+    println!("{:?}", api_url);
     match fetch_data(&api_url).await {
         Ok(price_info) => Ok(price_info),
         Err(err) => Err(err),
@@ -76,7 +77,7 @@ mod tests {
         let path = PathParams {
             base: "eth".to_owned(),
             quote: "usd".to_owned(),
-            timestamp: 1711110660,
+            timestamp: "1711110660".to_owned(),
             interval: "1min".to_owned(),
         };
         let query = QueryParams {
@@ -90,7 +91,7 @@ mod tests {
                 assert_eq!(price_info.decimals, 8);
                 assert_eq!(price_info.pair_id, "ETH/USD");
                 assert_eq!(price_info.price, "0x4f8b06508e");
-                assert_eq!(price_info.timestamp, 1711110660000);
+                assert_eq!(price_info.timestamp, 1711110660000.to_owned());
                 assert_eq!(price_info.num_sources_aggregated, 4);
             }
             Err(err) => {
