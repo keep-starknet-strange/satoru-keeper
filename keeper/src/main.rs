@@ -68,8 +68,8 @@ async fn execution_mode() {
                     .unwrap(),
             )
             .expect("Could not convert private key to felt."),
-            chain_id::TESTNET,
-            ExecutionEncoding::Legacy,
+            chain_id::SEPOLIA,
+            ExecutionEncoding::New,
         );
 
     let account_ref = Arc::new(account);
