@@ -77,7 +77,6 @@ async fn execution_mode() {
     let call_back = |payload: Payload| {
         let account_ref = Arc::clone(&account_ref);
         task::spawn(async move {
-            println!("{:?}", payload.row_data);
             let account_ref = Arc::clone(&account_ref);
             match payload.table.as_str() {
                 "orders" => match payload.action_type {

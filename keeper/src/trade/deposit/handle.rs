@@ -33,6 +33,7 @@ abigen!(
     type_aliases {
         satoru::price::price::Price as Price_;
         satoru::oracle::oracle::Oracle::Event as Event__;
+        satoru::oracle::oracle_utils::SetPricesParams as SetPricesParams_;
     }
 );
 

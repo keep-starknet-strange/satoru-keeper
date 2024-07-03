@@ -14,6 +14,8 @@ use crate::{
     types::SatoruAction,
 };
 
+use super::order::handle::Price_;
+
 pub fn get_token_name_from_address(token_address: ContractAddress) -> String {
     match token_address {
         x if x
@@ -67,7 +69,7 @@ pub async fn get_set_primary_price_call(
 
     let price = price_setup(trade.time_stamp, market.clone()).await;
 
-    oracle.set_primary_price_getcall(&market.long_token, &price)
+    oracle.set_primary_price_getcall(&market.long_token, &Price_ { min: price, max: price })
 }
 
 pub async fn price_setup(timestamp: String, market: Market) -> U256 {

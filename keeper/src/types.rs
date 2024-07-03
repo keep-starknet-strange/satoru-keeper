@@ -1,4 +1,6 @@
+use cainome::cairo_serde::{ContractAddress, U256};
 use serde::{Deserialize, Serialize};
+use starknet::core::types::FieldElement;
 
 // An enum representing the types of database actions.
 #[derive(Deserialize, Debug)]
@@ -52,6 +54,42 @@ pub struct SatoruAction {
     // Deposit & Withdrawal shared.
     pub long_token_swap_path: Option<String>,
     pub short_token_swap_path: Option<String>,
+}
+
+// A struct of a Satoru Position.
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct Position {
+    pub key: FieldElement,
+    pub account: String,
+    pub market: String,
+    pub collateral_token: String,
+    pub size_in_usd: u128,
+    pub size_in_tokens: u128,
+    pub collateral_amount: u128,
+    pub borrowing_factor: u128,
+    pub funding_fee_amount_per_size: u128,
+    pub long_token_claimable_funding_amount_per_size: u128,
+    pub short_token_claimable_funding_amount_per_size: u128,
+    pub increased_at_block: u64,
+    pub decreased_at_block: u64,
+    pub is_long: bool
+}
+
+// A struct of a Satoru Market.
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct Market {
+    pub market_token: String,
+    pub index_token: String,
+    pub long_token: String,
+    pub short_token: String,
+}
+
+// A struct of a Satoru Market.
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct MarketPrices {
+    pub index_token_price: String,
+    pub long_token_price: String,
+    pub short_token_price: String,
 }
 
 // A struct representing the payload of a notification.

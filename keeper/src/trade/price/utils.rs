@@ -36,7 +36,6 @@ pub async fn get_pragma_price(
         "https://api.dev.pragma.build/node/v1/data/{}/{}?interval={}&aggregation={}&timestamp={}",
         path.base, path.quote, path.interval, query.aggregation, path.timestamp
     );
-    println!("{:?}", api_url);
     match fetch_data(&api_url).await {
         Ok(price_info) => Ok(price_info),
         Err(err) => Err(err),
@@ -95,7 +94,6 @@ mod tests {
                 assert_eq!(price_info.num_sources_aggregated, 4);
             }
             Err(err) => {
-                println!("{:?}", err);
                 match err {
                     PragmaAPIError::APIKeyNotSet() => {}
                     PragmaAPIError::Unknown(_) => {}
