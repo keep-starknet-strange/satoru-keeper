@@ -11,7 +11,7 @@ use starknet::{
     signers::LocalWallet,
 };
 
-use crate::{trade::utils::get_set_primary_price_call, types::SatoruAction};
+use crate::{trade::utils::price_setup, types::SatoruAction};
 
 abigen!(
     OrderHandler,
@@ -42,19 +42,17 @@ pub async fn handle_order(
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
     order: SatoruAction,
 ) {
-    let set_price_call = get_set_primary_price_call(order.clone(), account.clone()).await;
-
-    let execute_order_call = get_execute_order_call(order, account.clone());
+    let execute_order_call = get_execute_order_call(order, account.clone()).await;
 
     let _order_execution_multicall = account
-        .execute(vec![set_price_call, execute_order_call])
+        .execute(vec![execute_order_call])
         .send()
         .await
         .expect("Order execution multicall failed");
     // TODO: poll transaction status
 }
 
-fn get_execute_order_call(
+async fn get_execute_order_call(
     order: SatoruAction,
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
 ) -> Call {
@@ -66,16 +64,26 @@ fn get_execute_order_call(
         account.clone(),
     );
 
+    let data_store_address = env::var("DATA_STORE").expect("DATA_STORE env variable not set");
+    let data_store = DataStore::new(
+        FieldElement::from_hex_be(&data_store_address)
+            .expect("Conversion error: data_store_address"),
+        account.clone(),
+    );
+
+    let market = data_store
+        .get_market(&ContractAddress::from(
+            FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
+        ))
+        .call()
+        .await
+        .expect("Could not get market");
+
+    let price = price_setup(order.time_stamp, market.clone()).await;
+
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
-        tokens: vec![
-            ContractAddress::from(
-                FieldElement::from_hex_be("0x").expect("Cannot convert string to felt"),
-            ),
-            ContractAddress::from(
-                FieldElement::from_hex_be("0x").expect("Cannot convert string to felt"),
-            ),
-        ],
+        tokens: vec![market.long_token, market.short_token],
         compacted_min_oracle_block_numbers: vec![63970, 63970],
         compacted_max_oracle_block_numbers: vec![64901, 64901],
         compacted_oracle_timestamps: vec![171119803, 10],
@@ -85,10 +93,7 @@ fn get_execute_order_call(
             high: 0,
         }],
         compacted_min_prices_indexes: vec![U256 { low: 0, high: 0 }],
-        compacted_max_prices: vec![U256 {
-            low: 2147483648010000,
-            high: 0,
-        }],
+        compacted_max_prices: vec![price, U256 { low: 1, high: 0 }], // TODO replace 1 by real short token price
         compacted_max_prices_indexes: vec![U256 { low: 0, high: 0 }],
         signatures: vec![
             vec![

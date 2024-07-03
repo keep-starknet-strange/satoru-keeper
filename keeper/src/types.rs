@@ -75,6 +75,7 @@ mod tests {
         let json_data = r#"
         {
             "block_number": 100,
+            "time_stamp": "1708839",
             "transaction_hash": "0x1",
             "key": "0x2",
             "account": "0x3",
@@ -92,6 +93,7 @@ mod tests {
 
         let action: SatoruAction = serde_json::from_str(json_data).unwrap();
         assert_eq!(action.block_number, 100);
+        assert_eq!(action.time_stamp, "1708839");
         assert_eq!(action.transaction_hash, "0x1");
         assert_eq!(action.key, "0x2");
         assert_eq!(action.account, "0x3");
