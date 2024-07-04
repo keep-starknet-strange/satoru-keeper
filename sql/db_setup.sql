@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS order_executed (
     PRIMARY KEY (block_number, transaction_hash)
 );
 
-CREATE TABLE IF NOT EXISTS position_increase (
+CREATE TABLE IF NOT EXISTS position (
     key TEXT NOT NULL,
     account TEXT NOT NULL,
     market TEXT NOT NULL,

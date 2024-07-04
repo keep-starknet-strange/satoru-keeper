@@ -53,7 +53,7 @@ impl Event for Position {
 
     async fn insert(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
         sqlx::query!(
-            "INSERT INTO position_increase (
+            "INSERT INTO position (
                 key, account, market, collateral_token, size_in_usd, size_in_tokens, collateral_amount,
                 borrowing_factor, funding_fee_amount_per_size, long_token_claimable_funding_amount_per_size,
                 short_token_claimable_funding_amount_per_size, increased_at_block, decreased_at_block, is_long
