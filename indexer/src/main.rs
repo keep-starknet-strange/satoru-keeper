@@ -14,7 +14,7 @@ use crate::events::event::Event;
 use crate::events::{
     deposit::Deposit, market_created::MarketCreated, order::Order, order_executed::OrderExecuted,
     pool_amount_updated::PoolAmountUpdated, swap_fees_collected::SwapFeesCollected,
-    swap_info::SwapInfo, withdrawal::Withdrawal,position_increase::PositionIncrease
+    swap_info::SwapInfo, withdrawal::Withdrawal,position::Position
 };
 
 #[tokio::main]
@@ -98,8 +98,8 @@ async fn main() -> Result<(), Error> {
         }),
     );
     event_processors.insert(
-        PositionIncrease::event_key(),
-        Box::new(events::handler::GenericEventProcessor::<PositionIncrease> {
+        Position::event_key(),
+        Box::new(events::handler::GenericEventProcessor::<Position> {
             _marker: std::marker::PhantomData,
         }),
     );

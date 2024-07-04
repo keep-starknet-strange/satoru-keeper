@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PositionIncrease {
+pub struct Position {
     pub key: String,
     pub account: String,
     pub market: String,
@@ -25,15 +25,15 @@ pub struct PositionIncrease {
 }
 
 #[async_trait]
-impl Event for PositionIncrease {
+impl Event for Position {
     fn event_key() -> &'static str {
-        "014196ccb31f81a3e67df18f2a62cbfb50009c80a7d3c728a3f542e3abc5cb63"
+        "0x14196ccb31f81a3e67df18f2a62cbfb50009c80a7d3c728a3f542e3abc5cb63"
     }
 
     fn from_generic_event(event: GenericEvent) -> Self {
         let data_parts: Vec<Option<String>> = event.data.split(',').map(|s| Some(s.to_string())).collect();
 
-        PositionIncrease {
+        Position {
             key: data_parts.get(0).cloned().unwrap_or(None).unwrap(),
             account: data_parts.get(1).cloned().unwrap_or(None).unwrap(),
             market: data_parts.get(2).cloned().unwrap_or(None).unwrap(),
