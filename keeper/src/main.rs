@@ -3,6 +3,7 @@ use std::{env, sync::Arc};
 
 use keeper_satoru::{
     error::KeeperError,
+    liquidation::process::get_liquidatable_positions,
     listen_db::start_listening,
     trade::{
         deposit::handle::handle_deposit, order::handle::handle_order,
@@ -77,7 +78,6 @@ async fn execution_mode() {
     let call_back = |payload: Payload| {
         let account_ref = Arc::clone(&account_ref);
         task::spawn(async move {
-            println!("{:?}", payload.row_data);
             let account_ref = Arc::clone(&account_ref);
             match payload.table.as_str() {
                 "orders" => match payload.action_type {
@@ -105,4 +105,47 @@ async fn execution_mode() {
     println!("Keeper connected to DB and listening...");
 
     let _ = start_listening(&pool, channels, call_back).await;
+}
+
+async fn liquidation_mode() {
+    let pool = sqlx::PgPool::connect("postgres://postgres:123@localhost:5432/zohal")
+        .await
+        .unwrap();
+
+    let provider = JsonRpcClient::new(HttpTransport::new(
+        Url::parse(
+            &env::var("RPC_URL")
+                .map_err(|_e| KeeperError::RpcUrlNotSet())
+                .unwrap(),
+        )
+        .map_err(|e| KeeperError::ProviderUrlError(format!("invalid rpc url: {}", e)))
+        .unwrap(),
+    ));
+
+    let signer = LocalWallet::from(SigningKey::from_secret_scalar(
+        FieldElement::from_hex_be(
+            &env::var("PRIVATE_KEY")
+                .map_err(|_e| KeeperError::PrivateKeyNotSet())
+                .unwrap(),
+        )
+        .expect("Could not convert private key to felt."),
+    ));
+
+    let account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>> =
+        Arc::new(SingleOwnerAccount::new(
+            provider,
+            signer,
+            FieldElement::from_hex_be(
+                &env::var("PUBLIC_KEY")
+                    .map_err(|_e| KeeperError::PublicKeyNotSet())
+                    .unwrap(),
+            )
+            .expect("Could not convert private key to felt."),
+            chain_id::TESTNET,
+            ExecutionEncoding::Legacy,
+        ));
+
+    while (true) {
+        let positions_to_liquidate = get_liquidatable_positions(&pool, Arc::clone(&account)).await;
+    }
 }

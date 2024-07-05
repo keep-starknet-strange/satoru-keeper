@@ -2,3 +2,4 @@
 Cargo.lock
 /contracts_build
 .env
+draft
