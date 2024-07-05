@@ -1,24 +1,35 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use bigdecimal::BigDecimal;
+use serde_with::{serde_as, DisplayFromStr};
 
-#[derive(Serialize, Deserialize)]
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize)]
 struct Position {
-    key: String,
-    account: String,
-    market: String,
-    collateral_token: String,
-    size_in_usd: Option<f64>,
-    size_in_tokens: Option<f64>,
-    collateral_amount: Option<f64>,
-    borrowing_factor: Option<f64>,
-    funding_fee_amount_per_size: Option<f64>,
-    long_token_claimable_funding_amount_per_size: Option<f64>,
-    short_token_claimable_funding_amount_per_size: Option<f64>,
-    increased_at_block: Option<i64>,
-    decreased_at_block: Option<i64>,
-    is_long: Option<bool>,
+    pub key: String,
+    pub account: String,
+    pub market: String,
+    pub collateral_token: String,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub size_in_usd: Option<BigDecimal>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub size_in_tokens: Option<BigDecimal>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub collateral_amount: Option<BigDecimal>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub borrowing_factor: Option<BigDecimal>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub funding_fee_amount_per_size: Option<BigDecimal>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub long_token_claimable_funding_amount_per_size: Option<BigDecimal>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub short_token_claimable_funding_amount_per_size: Option<BigDecimal>,
+    pub increased_at_block: Option<i64>,
+    pub decreased_at_block: Option<i64>,
+    pub is_long: Option<bool>,
 }
+
 
 #[post("/positions")]
 async fn create_position(
@@ -76,7 +87,26 @@ async fn get_positions(pool: web::Data<PgPool>) -> impl Responder {
     .await;
 
     match rows {
-        Ok(positions) => HttpResponse::Ok().json(positions),
+        Ok(records) => {
+            let positions: Vec<Position> = records.iter().map(|record| Position {
+                key: record.key.clone(),
+                account: record.account.clone(),
+                market: record.market.clone(),
+                collateral_token: record.collateral_token.clone(),
+                size_in_usd: record.size_in_usd.clone(),
+                size_in_tokens: record.size_in_tokens.clone(),
+                collateral_amount: record.collateral_amount.clone(),
+                borrowing_factor: record.borrowing_factor.clone(),
+                funding_fee_amount_per_size: record.funding_fee_amount_per_size.clone(),
+                long_token_claimable_funding_amount_per_size: record.long_token_claimable_funding_amount_per_size.clone(),
+                short_token_claimable_funding_amount_per_size: record.short_token_claimable_funding_amount_per_size.clone(),
+                increased_at_block: record.increased_at_block,
+                decreased_at_block: record.decreased_at_block,
+                is_long: record.is_long,
+            }).collect();
+
+            HttpResponse::Ok().json(positions)
+        },
         Err(err) => {
             println!("Failed to execute query: {:?}", err);
             HttpResponse::InternalServerError().finish()
