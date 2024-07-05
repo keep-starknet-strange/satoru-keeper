@@ -9,8 +9,8 @@ use starknet::{
 };
 
 use crate::{
+    price::utils::{get_pragma_price, PathParams, QueryParams},
     trade::order::handle::{DataStore, Market, Oracle},
-    trade::price::utils::{get_pragma_price, PathParams, QueryParams},
     types::SatoruAction,
 };
 
@@ -69,7 +69,13 @@ pub async fn get_set_primary_price_call(
 
     let price = price_setup(trade.time_stamp, market.clone()).await;
 
-    oracle.set_primary_price_getcall(&market.long_token, &Price_ { min: price, max: price })
+    oracle.set_primary_price_getcall(
+        &market.long_token,
+        &Price_ {
+            min: price,
+            max: price,
+        },
+    )
 }
 
 pub async fn price_setup(timestamp: String, market: Market) -> U256 {
@@ -100,7 +106,7 @@ pub async fn price_setup(timestamp: String, market: Market) -> U256 {
 
 #[cfg(test)]
 mod tests {
-    use crate::trade::price::error::PragmaAPIError;
+    use crate::price::error::PragmaAPIError;
 
     use super::*;
 

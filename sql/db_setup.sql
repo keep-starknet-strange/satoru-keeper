@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE TABLE IF NOT EXISTS deposits (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     account TEXT,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS deposits (
 );
 CREATE TABLE IF NOT EXISTS withdrawals (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     account TEXT,
@@ -74,11 +74,10 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     callback_gas_limit BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS market_created (
+CREATE TABLE IF NOT EXISTS markets (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
-    key TEXT,
     creator TEXT,
     market_token TEXT,
     index_token TEXT,
@@ -89,7 +88,7 @@ CREATE TABLE IF NOT EXISTS market_created (
 
 CREATE TABLE IF NOT EXISTS swap_fees_collected (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     market TEXT,
@@ -106,7 +105,7 @@ CREATE TABLE IF NOT EXISTS swap_fees_collected (
 
 CREATE TABLE IF NOT EXISTS swap_info (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     order_key TEXT,
@@ -127,7 +126,7 @@ CREATE TABLE IF NOT EXISTS swap_info (
 
 CREATE TABLE IF NOT EXISTS pool_amount_updated (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     market TEXT,
@@ -139,7 +138,7 @@ CREATE TABLE IF NOT EXISTS pool_amount_updated (
 
 CREATE TABLE IF NOT EXISTS order_executed (
     block_number BIGINT NOT NULL,
-    timestamp TEXT,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     secondary_order_type TEXT,
