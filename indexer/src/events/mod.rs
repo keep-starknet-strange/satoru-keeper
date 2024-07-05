@@ -7,5 +7,6 @@ pub mod pool_amount_updated;
 pub mod swap_fees_collected;
 pub mod swap_info;
 pub mod withdrawal;
+pub mod position;
 
 pub mod handler;

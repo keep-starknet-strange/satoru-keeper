@@ -146,6 +146,23 @@ CREATE TABLE IF NOT EXISTS order_executed (
     PRIMARY KEY (block_number, transaction_hash)
 );
 
+CREATE TABLE IF NOT EXISTS position (
+    key TEXT NOT NULL,
+    account TEXT NOT NULL,
+    market TEXT NOT NULL,
+    collateral_token TEXT NOT NULL,
+    size_in_usd NUMERIC,
+    size_in_tokens NUMERIC,
+    collateral_amount NUMERIC,
+    borrowing_factor NUMERIC,
+    funding_fee_amount_per_size NUMERIC,
+    long_token_claimable_funding_amount_per_size NUMERIC,
+    short_token_claimable_funding_amount_per_size NUMERIC,
+    increased_at_block BIGINT,
+    decreased_at_block BIGINT,
+    is_long BOOLEAN
+);
+
 -- Drop the existing function and triggers if it exists
 DROP TRIGGER IF EXISTS orders_notify_update ON orders;
 DROP TRIGGER IF EXISTS orders_notify_insert ON orders;
