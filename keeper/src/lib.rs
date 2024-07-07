@@ -4,4 +4,5 @@ pub mod listen_db;
 pub mod price;
 pub mod query;
 pub mod trade;
+pub mod trigger;
 pub mod types;
