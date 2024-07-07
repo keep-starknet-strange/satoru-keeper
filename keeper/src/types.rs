@@ -1,9 +1,13 @@
+use std::vec;
+
 use cainome::cairo_serde::{ContractAddress, U256};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, FromRow, Row};
 use starknet::core::types::FieldElement;
 
-use crate::liquidation::utils::{Market, Position};
+use crate::liquidation::utils::{
+    DecreasePositionSwapType, Market, Order, OrderType, Position, Span32,
+};
 
 // An enum representing the types of database actions.
 #[derive(Deserialize, Debug)]
@@ -213,6 +217,165 @@ impl<'r> FromRow<'r, PgRow> for Position {
             is_long: row
                 .try_get::<'r, bool, _>("is_long")
                 .expect("Could not get is_long"),
+        })
+    }
+}
+
+impl<'r> FromRow<'r, PgRow> for Order {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+        let key: &str = row.try_get("key").expect("Couldn't decode position");
+        let order_type_str = row
+            .try_get("order_type")
+            .expect("Couldn't decode order_type");
+        let order_type: OrderType = match order_type_str {
+            "MarketSwap" => Ok(OrderType::MarketSwap),
+            "LimitSwap" => Ok(OrderType::LimitSwap),
+            "MarketIncrease" => Ok(OrderType::MarketIncrease),
+            "LimitIncrease" => Ok(OrderType::LimitIncrease),
+            "MarketDecrease" => Ok(OrderType::MarketDecrease),
+            "LimitDecrease" => Ok(OrderType::LimitDecrease),
+            "StopLossDecrease" => Ok(OrderType::StopLossDecrease),
+            "Liquidation" => Ok(OrderType::Liquidation),
+            &_ => Err("Could not match order_type"),
+        }
+        .expect("failed to match order_type");
+        let decrease_position_swap_type_str = row
+            .try_get("decrease_position_swap_type")
+            .expect("Couldn't decode decrease_position_swap_type");
+        let decrease_position_swap_type: DecreasePositionSwapType =
+            match decrease_position_swap_type_str {
+                "NoSwap" => Ok(DecreasePositionSwapType::NoSwap),
+                "SwapPnlTokenToCollateralToken" => {
+                    Ok(DecreasePositionSwapType::SwapPnlTokenToCollateralToken)
+                }
+                "SwapCollateralTokenToPnlToken" => {
+                    Ok(DecreasePositionSwapType::SwapCollateralTokenToPnlToken)
+                }
+                &_ => Err("Could not match decrease_position_swap_type"),
+            }
+            .expect("failed to match decrease_position_swap_type");
+        let account: &str = row.try_get("account").expect("Couldn't decode account");
+        let receiver: &str = row.try_get("receiver").expect("Couldn't decode receiver");
+        let callback_contract: &str = row
+            .try_get("callback_contract")
+            .expect("Couldn't decode callback_contract");
+        let ui_fee_receiver: &str = row
+            .try_get("ui_fee_receiver")
+            .expect("Couldn't decode ui_fee_receiver");
+        let market: &str = row.try_get("market").expect("Couldn't decode market");
+        let initial_collateral_token = row
+            .try_get("initial_collateral_token")
+            .expect("Couldn't decode initial_collateral_token");
+        let swap_path: &str = row
+            .try_get::<'r, &str, _>("swap_path")
+            .expect("Could not get size_in_usd");
+        let size_delta_usd: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("size_delta_usd")
+                .expect("Could not get size_delta_usd"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let initial_collateral_delta_amount: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("initial_collateral_delta_amount")
+                .expect("Could not get initial_collateral_delta_amount"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let trigger_price: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("trigger_price")
+                .expect("Could not get trigger_price"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let acceptable_price: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("acceptable_price")
+                .expect("Could not get acceptable_price"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let execution_fee: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("execution_fee")
+                .expect("Could not get execution_fee"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let callback_gas_limit: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("callback_gas_limit")
+                .expect("Could not get callback_gas_limit"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let min_output_amount: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("min_output_amount")
+                .expect("Could not get min_output_amount"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let updated_at_block: u64 = u64::from_str_radix(
+            row.try_get::<'r, &str, _>("updated_at_block")
+                .expect("Could not get updated_at_block"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let is_long: bool = row.try_get("is_long").expect("Could not get is_long");
+        let is_frozen: bool = row.try_get("is_frozen").expect("Could not get is_frozen");
+        Ok(Order {
+            key: FieldElement::from_hex_be(key).expect("Could not convert market_token to felt"),
+            order_type,
+            decrease_position_swap_type,
+            account: ContractAddress::from(
+                FieldElement::from_hex_be(account).expect("Could not convert account to felt"),
+            ),
+            receiver: ContractAddress::from(
+                FieldElement::from_hex_be(receiver).expect("Could not convert receiver to felt"),
+            ),
+            callback_contract: ContractAddress::from(
+                FieldElement::from_hex_be(callback_contract)
+                    .expect("Could not convert callback_contract to felt"),
+            ),
+            ui_fee_receiver: ContractAddress::from(
+                FieldElement::from_hex_be(ui_fee_receiver)
+                    .expect("Could not convert ui_fee_receiver to felt"),
+            ),
+            market: ContractAddress::from(
+                FieldElement::from_hex_be(market).expect("Could not convert market to felt"),
+            ),
+            initial_collateral_token: ContractAddress::from(
+                FieldElement::from_hex_be(initial_collateral_token)
+                    .expect("Could not convert initial_collateral_token to felt"),
+            ),
+            swap_path: Span32 { snapshot: vec![] },
+            size_delta_usd: U256 {
+                low: size_delta_usd,
+                high: 0,
+            },
+            initial_collateral_delta_amount: U256 {
+                low: initial_collateral_delta_amount,
+                high: 0,
+            },
+            trigger_price: U256 {
+                low: trigger_price,
+                high: 0,
+            },
+            acceptable_price: U256 {
+                low: acceptable_price,
+                high: 0,
+            },
+            execution_fee: U256 {
+                low: execution_fee,
+                high: 0,
+            },
+            callback_gas_limit: U256 {
+                low: callback_gas_limit,
+                high: 0,
+            },
+            min_output_amount: U256 {
+                low: min_output_amount,
+                high: 0,
+            },
+            updated_at_block,
+            is_long,
+            is_frozen,
         })
     }
 }

@@ -22,7 +22,7 @@ abigen!(
     DataStore,
     "./resources/satoru_DataStore.contract_class.json",
     type_aliases {
-        satoru::order::order::OrderType as Order_;
+        satoru::order::order::OrderType as OrderType_;
         satoru::data::data_store::DataStore::Event as Event_;
         satoru::order::order::DecreasePositionSwapType as Decrease_;
         satoru::utils::span32::Span32 as Span32_;

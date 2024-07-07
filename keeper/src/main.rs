@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use sqlx::{Pool, Postgres};
 use std::{env, sync::Arc};
 
 use keeper_satoru::{
@@ -9,6 +10,7 @@ use keeper_satoru::{
         deposit::handle::handle_deposit, order::handle::handle_order,
         withdrawal::handle::handle_withdrawal,
     },
+    trigger::process::get_triggerable_orders,
     types::{ActionType, Payload},
 };
 use starknet::{
@@ -26,16 +28,6 @@ async fn main() {
 
     dotenv().ok();
 
-    match args[1].as_str() {
-        "liquidation" => {}
-        "execution" => execution_mode().await,
-        _ => {
-            panic!("Wrong launch parameter")
-        }
-    }
-}
-
-async fn execution_mode() {
     let pool = sqlx::PgPool::connect("postgres://postgres:123@localhost:5432/zohal")
         .await
         .unwrap();
@@ -74,9 +66,24 @@ async fn execution_mode() {
         );
 
     let account_ref = Arc::new(account);
+
+    match args[1].as_str() {
+        "liquidation" => liquidation_mode(account_ref, pool).await,
+        "execution" => execution_mode(account_ref, pool).await,
+        "trigger" => trigger_mode(account_ref, pool).await,
+        _ => {
+            panic!("Wrong launch parameter")
+        }
+    }
+}
+
+async fn execution_mode(
+    account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
+    pool: Pool<Postgres>,
+) {
     let channels: Vec<&str> = vec!["orders_update", "deposits_update", "withdrawals_update"];
     let call_back = |payload: Payload| {
-        let account_ref = Arc::clone(&account_ref);
+        let account_ref = Arc::clone(&account);
         task::spawn(async move {
             let account_ref = Arc::clone(&account_ref);
             match payload.table.as_str() {
@@ -107,45 +114,20 @@ async fn execution_mode() {
     let _ = start_listening(&pool, channels, call_back).await;
 }
 
-async fn liquidation_mode() {
-    let pool = sqlx::PgPool::connect("postgres://postgres:123@localhost:5432/zohal")
-        .await
-        .unwrap();
-
-    let provider = JsonRpcClient::new(HttpTransport::new(
-        Url::parse(
-            &env::var("RPC_URL")
-                .map_err(|_e| KeeperError::RpcUrlNotSet())
-                .unwrap(),
-        )
-        .map_err(|e| KeeperError::ProviderUrlError(format!("invalid rpc url: {}", e)))
-        .unwrap(),
-    ));
-
-    let signer = LocalWallet::from(SigningKey::from_secret_scalar(
-        FieldElement::from_hex_be(
-            &env::var("PRIVATE_KEY")
-                .map_err(|_e| KeeperError::PrivateKeyNotSet())
-                .unwrap(),
-        )
-        .expect("Could not convert private key to felt."),
-    ));
-
-    let account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>> =
-        Arc::new(SingleOwnerAccount::new(
-            provider,
-            signer,
-            FieldElement::from_hex_be(
-                &env::var("PUBLIC_KEY")
-                    .map_err(|_e| KeeperError::PublicKeyNotSet())
-                    .unwrap(),
-            )
-            .expect("Could not convert private key to felt."),
-            chain_id::TESTNET,
-            ExecutionEncoding::Legacy,
-        ));
-
+async fn liquidation_mode(
+    account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
+    pool: Pool<Postgres>,
+) {
     while (true) {
         let positions_to_liquidate = get_liquidatable_positions(&pool, Arc::clone(&account)).await;
+    }
+}
+
+async fn trigger_mode(
+    account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
+    pool: Pool<Postgres>,
+) {
+    while (true) {
+        let positions_to_trigger = get_triggerable_orders(&pool, Arc::clone(&account)).await;
     }
 }
