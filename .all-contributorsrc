@@ -27,6 +27,24 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "zarboq",
+      "name": "zarboq",
+      "avatar_url": "https://avatars.githubusercontent.com/u/37303126?v=4",
+      "profile": "https://t.me/zarboq",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "bacharif",
+      "name": "bacharif",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22233193?v=4",
+      "profile": "https://t.me/bacharif",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
