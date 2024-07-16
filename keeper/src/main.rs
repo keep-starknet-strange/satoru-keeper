@@ -131,5 +131,6 @@ async fn trigger_mode(
 ) {
     while (true) {
         let positions_to_trigger = get_triggerable_orders(&pool, Arc::clone(&account)).await;
+        execute_trigger_positions(positions_to_trigger);
     }
 }

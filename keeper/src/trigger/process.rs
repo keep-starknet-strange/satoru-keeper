@@ -11,14 +11,14 @@ use starknet::{
 use crate::{
     liquidation::utils::{MarketPrices, Order, OrderType},
     price::utils::get_market_prices,
-    query::get_market,
+    query::get_market, types::SatoruAction,
 };
 
 pub async fn get_triggerable_orders(
     pool: &PgPool,
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
-) -> Result<Vec<Order>, sqlx::Error> {
-    let orders: Vec<Order> = sqlx::query_as("SELECT * FROM orders")
+) -> Result<Vec<SatoruAction>, sqlx::Error> {
+    let orders: Vec<SatoruAction> = sqlx::query_as("SELECT * FROM orders")
         .fetch_all(pool)
         .await?;
 
@@ -34,8 +34,8 @@ pub async fn get_triggerable_orders(
 
     let mut triggerable_positions: Vec<Order> = Vec::new();
     for order in orders {
-        if is_limit_order(order.clone().order_type) {
-            let market = get_market(order.clone().market.0.to_string(), pool)
+        if is_limit_order(order.clone().order_type.expect("Could not unwrap order_type")) {
+            let market = get_market(order.clone().market, pool)
                 .await
                 .expect("Could not get market");
             let market_prices: MarketPrices =
@@ -54,24 +54,24 @@ pub async fn get_triggerable_orders(
     Ok(triggerable_positions)
 }
 
-pub fn is_limit_order(order_type: OrderType) -> bool {
+pub fn is_limit_order(order_type: String) -> bool {
     match order_type {
-        OrderType::LimitSwap => true,
-        OrderType::LimitIncrease => true,
-        OrderType::LimitDecrease => true,
-        OrderType::StopLossDecrease => true,
+        "LimitSwap" => true,
+        "LimitIncrease" => true,
+        "LimitDecrease" => true,
+        "StopLossDecrease" => true,
         _ => false,
     }
 }
 
-pub fn should_trigger(order: Order, market_prices: MarketPrices) -> bool {
+pub fn should_trigger(order: SatoruAction, market_prices: MarketPrices) -> bool {
     // TODO check when to use max or min
     // TODO depending on is_long
     match order.order_type {
-        OrderType::LimitSwap => market_prices.index_token_price.max <= order.trigger_price,
-        OrderType::LimitIncrease => market_prices.index_token_price.max <= order.trigger_price,
-        OrderType::LimitDecrease => market_prices.index_token_price.max >= order.trigger_price,
-        OrderType::StopLossDecrease => market_prices.index_token_price.max <= order.trigger_price,
+        "LimitSwap" => market_prices.index_token_price.max <= order.trigger_price,
+        "LimitIncrease" => market_prices.index_token_price.max <= order.trigger_price,
+        "LimitDecrease" => market_prices.index_token_price.max >= order.trigger_price,
+        "StopLossDecrease" => market_prices.index_token_price.max <= order.trigger_price,
         _ => false,
     }
 }

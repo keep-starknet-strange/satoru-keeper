@@ -2,7 +2,7 @@ use std::vec;
 
 use cainome::cairo_serde::{ContractAddress, U256};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, FromRow, Row};
+use sqlx::{postgres::PgRow, Decode, FromRow, Row};
 use starknet::core::types::FieldElement;
 
 use crate::liquidation::utils::{
@@ -108,6 +108,177 @@ pub struct Payload {
     pub table: String,
     pub action_type: ActionType,
     pub row_data: SatoruAction,
+}
+
+impl<'r> FromRow<'r, PgRow> for SatoruAction {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+        let block_number: u64 = u64::from_str_radix(
+            row.try_get::<'r, &str, _>("block_number")
+                .expect("Could not get block_number"),
+            10,
+        )
+        .expect("failed to convert string to u64");;
+        let timestamp: &str = row.try_get("time_stamp").expect("Couldn't decode time_stamp");
+        let transaction_hash: &str = row.try_get("time_stamp").expect("Couldn't decode time_stamp");
+        let key: &str = row.try_get("key").expect("Couldn't decode position");
+        let account: &str = row.try_get("account").expect("Couldn't decode account");
+        let receiver: &str = row.try_get("receiver").expect("Couldn't decode receiver");
+        let callback_contract: &str = row
+            .try_get("callback_contract")
+            .expect("Couldn't decode callback_contract");
+        let ui_fee_receiver: &str = row
+            .try_get("ui_fee_receiver")
+            .expect("Couldn't decode ui_fee_receiver");
+        let market: &str = row.try_get("market").expect("Couldn't decode market");
+        let execution_fee: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("execution_fee")
+                .expect("Could not get execution_fee"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let callback_gas_limit: u128 = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("callback_gas_limit")
+                .expect("Could not get callback_gas_limit"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+        let updated_at_block: u64 = u64::from_str_radix(
+            row.try_get::<'r, &str, _>("updated_at_block")
+                .expect("Could not get updated_at_block"),
+            10,
+        )
+        .expect("failed to convert string to u128");
+
+        let order_type: Option<&str> = row
+            .try_get("order_type")
+            .expect("Couldn't decode order_type");
+        let decrease_position_swap_type: Option<&str> = row
+            .try_get("decrease_position_swap_type")
+            .ok();
+        let initial_collateral_token: Option<&str> = row
+            .try_get("initial_collateral_token").ok();
+        let swap_path: Option<&str> = row
+            .try_get::<'r, &str, _>("swap_path").ok();
+        let size_delta_usd: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("size_delta_usd")
+                .expect("Could not get size_delta_usd"),
+            10,
+        )
+        .ok();
+        let initial_collateral_delta_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("initial_collateral_delta_amount")
+                .expect("Could not get initial_collateral_delta_amount"),
+            10,
+        )
+        .ok();
+        let trigger_price: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("trigger_price")
+                .expect("Could not get trigger_price"),
+            10,
+        )
+        .ok();
+        let acceptable_price: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("acceptable_price")
+                .expect("Could not get acceptable_price"),
+            10,
+        )
+        .ok();
+        let min_output_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("min_output_amount")
+                .expect("Could not get min_output_amount"),
+            10,
+        )
+        .ok();
+        let is_long: Option<bool> = row.try_get("is_long").ok();
+        let is_frozen: Option<bool> = row.try_get("is_frozen").ok();
+
+        let initial_long_token: Option<&str> = row.try_get::<'r, &str, _>("initial_long_token").ok();
+        let initial_short_token: Option<&str> = row.try_get::<'r, &str, _>("initial_short_token").ok();
+        let initial_long_token_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("initial_long_token_amount")
+                .expect("Could not get initial_long_token_amount"),
+            10,
+        )
+        .ok();
+        let initial_short_token_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("initial_short_token_amount")
+                .expect("Could not get initial_short_token_amount"),
+            10,
+        )
+        .ok();
+        let min_market_tokens: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("min_market_tokens")
+                .expect("Could not get min_market_tokens"),
+            10,
+        )
+        .ok();
+
+        let market_token_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("market_token_amount")
+                .expect("Could not get market_token_amount"),
+            10,
+        )
+        .ok();
+        let min_long_token_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("min_long_token_amount")
+                .expect("Could not get min_long_token_amount"),
+            10,
+        )
+        .ok();
+        let min_short_token_amount: Option<u128> = u128::from_str_radix(
+            row.try_get::<'r, &str, _>("min_short_token_amount")
+                .expect("Could not get min_short_token_amount"),
+            10,
+        )
+        .ok();
+
+        let long_token_swap_path = row.try_get::<'r, &str, _>("long_token_swap_path").ok();
+        let short_token_swap_path = row.try_get::<'r, &str, _>("short_token_swap_path").ok();
+        Ok(SatoruAction {
+            // Shared.
+            block_number,
+            time_stamp: timestamp.to_owned(),
+            transaction_hash: transaction_hash.to_owned(),
+            key: key.to_owned(),
+            account: account.to_owned(),
+            receiver: receiver.to_owned(),
+            callback_contract: callback_contract.to_owned(),
+            ui_fee_receiver: ui_fee_receiver.to_owned(),
+            market: market.to_owned(),
+            execution_fee,
+            callback_gas_limit,
+            updated_at_block,
+        
+            // Order specific.
+            order_type: order_type.map(|s| s.to_string()),
+            decrease_position_swap_type: decrease_position_swap_type.map(|s| s.to_string()),
+            initial_collateral_token: initial_collateral_token.map(|s| s.to_string()),
+            swap_path: swap_path.map(|s| s.to_string()),
+            size_delta_usd,
+            initial_collateral_delta_amount,
+            trigger_price,
+            acceptable_price,
+            min_output_amount,
+            is_long,
+            is_frozen,
+        
+            // Deposit specific.
+            initial_long_token: initial_long_token.map(|s| s.to_string()),
+            initial_short_token: initial_short_token.map(|s| s.to_string()),
+            initial_long_token_amount,
+            initial_short_token_amount,
+            min_market_tokens,
+        
+            // Withdrawal specific
+            market_token_amount,
+            min_long_token_amount,
+            min_short_token_amount,
+        
+            // Deposit & Withdrawal shared.
+            long_token_swap_path: long_token_swap_path.map(|s| s.to_string()),
+            short_token_swap_path: short_token_swap_path.map(|s| s.to_string()),
+        })
+    }
 }
 
 impl<'r> FromRow<'r, PgRow> for Position {
