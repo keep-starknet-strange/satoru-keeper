@@ -4,6 +4,7 @@ use cainome::{
     cairo_serde::{ContractAddress, U256},
     rs::abigen,
 };
+use log::error;
 use starknet::{
     accounts::{Account, Call, SingleOwnerAccount},
     core::types::FieldElement,
@@ -12,6 +13,8 @@ use starknet::{
 };
 
 use crate::{trade::utils::price_setup, types::SatoruAction};
+
+use super::error::OrderError;
 
 abigen!(
     OrderHandler,
@@ -43,44 +46,57 @@ pub async fn handle_order(
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
     order: SatoruAction,
 ) {
-    let execute_order_call = get_execute_order_call(order, account.clone()).await;
+    match get_execute_order_call(order, account.clone()).await {
+        Ok(execute_order_call) => {
+            let order_execution_multicall = account.execute(vec![execute_order_call]).send().await;
 
-    let _order_execution_multicall = account
-        .execute(vec![execute_order_call])
-        .send()
-        .await
-        .expect("Order execution multicall failed");
-    // TODO: poll transaction status
+            match order_execution_multicall {
+                Ok(_multicall) => {
+                    // TODO: poll transaction status
+                }
+                Err(e) => {
+                    error!("Order execution multicall failed: {:?}", e);
+                }
+            }
+        }
+        Err(e) => {
+            error!("Failed to get execute order call: {:?}", e);
+        }
+    }
 }
 
 async fn get_execute_order_call(
     order: SatoruAction,
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
-) -> Call {
-    let order_handler_address =
-        env::var("ORDER_HANDLER").expect("ORDER_HANDLER env variable not set");
+) -> Result<Call, OrderError> {
+    let order_handler_address = env::var("ORDER_HANDLER")
+        .map_err(|e| OrderError::EnvVarNotSet("ORDER_HANDLER".to_owned()))?;
     let order_handler = OrderHandler::new(
         FieldElement::from_hex_be(&order_handler_address)
-            .expect("Conversion error: order_handler_address"),
+            .map_err(|e| OrderError::ConversionError(format!("order_handler_address: {}", e)))?,
         account.clone(),
     );
 
-    let data_store_address = env::var("DATA_STORE").expect("DATA_STORE env variable not set");
-    let data_store = DataStore::new(
-        FieldElement::from_hex_be(&data_store_address)
-            .expect("Conversion error: data_store_address"),
-        account.clone(),
-    );
+    let data_store_address =
+        env::var("DATA_STORE").map_err(|e| OrderError::EnvVarNotSet("DATA_STORE".to_owned()))?;
+
+    let data_store_felt = FieldElement::from_hex_be(&data_store_address)
+        .map_err(|e| OrderError::ConversionError(format!("data_store_address: {}", e)))?;
+
+    let data_store = DataStore::new(data_store_felt, account.clone());
+
+    let market_key_felt = FieldElement::from_hex_be(&order.key)
+        .map_err(|e| OrderError::ConversionError(format!("order.key: {}", e)))?;
 
     let market = data_store
-        .get_market(&ContractAddress::from(
-            FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
-        ))
+        .get_market(&ContractAddress::from(market_key_felt))
         .call()
         .await
-        .expect("Could not get market");
+        .map_err(|e| OrderError::SmartContractError(format!("Could not get market: {}", e)))?;
 
-    let price = price_setup(order.time_stamp, market.clone()).await;
+    let price = price_setup(order.time_stamp, market.clone())
+        .await
+        .map_err(|e| OrderError::PriceError(e.to_string()))?;
 
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
@@ -98,19 +114,28 @@ async fn get_execute_order_call(
         compacted_max_prices_indexes: vec![U256 { low: 0, high: 0 }],
         signatures: vec![
             vec![
-                FieldElement::from_hex_be("0x").expect("Cannot convert string to felt"),
-                FieldElement::from_hex_be("0x").expect("Cannot convert string to felt"),
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    OrderError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    OrderError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
             ],
             vec![
-                FieldElement::from_hex_be("0x").expect("Cannot convert string to felt"),
-                FieldElement::from_hex_be("0x").expect("Cannot convert string to felt"),
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    OrderError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    OrderError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
             ],
         ],
         price_feed_tokens: vec![],
     };
 
-    order_handler.execute_order_getcall(
-        &FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
+    Ok(order_handler.execute_order_getcall(
+        &FieldElement::from_hex_be(&order.key)
+            .map_err(|e| OrderError::ConversionError("Cannot convert string to felt".to_owned()))?,
         &set_prices_params,
-    )
+    ))
 }

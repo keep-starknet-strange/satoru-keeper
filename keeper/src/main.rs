@@ -1,4 +1,6 @@
 use dotenv::dotenv;
+use env_logger::Env;
+use log::info;
 use sqlx::{Pool, Postgres};
 use std::{env, sync::Arc};
 
@@ -27,7 +29,7 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
 
     dotenv().ok();
-
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
     let pool = sqlx::PgPool::connect("postgres://postgres:123@localhost:5432/zohal")
         .await
         .unwrap();
@@ -109,7 +111,7 @@ async fn execution_mode(
             }
         })
     };
-    println!("Keeper connected to DB and listening...");
+    info!("Keeper connected to DB and listening...");
 
     let _ = start_listening(&pool, channels, call_back).await;
 }
