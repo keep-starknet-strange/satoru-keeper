@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use env_logger::Env;
-use log::{info};
+use log::info;
 use sqlx::{Pool, Postgres};
 use std::{env, sync::Arc};
 

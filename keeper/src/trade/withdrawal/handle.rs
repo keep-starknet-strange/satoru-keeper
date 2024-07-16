@@ -12,7 +12,13 @@ use starknet::{
     signers::LocalWallet,
 };
 
-use crate::{trade::{order::handle::DataStore, utils::{get_set_primary_price_call, price_setup}}, types::SatoruAction};
+use crate::{
+    trade::{
+        order::handle::DataStore,
+        utils::{get_set_primary_price_call, price_setup},
+    },
+    types::SatoruAction,
+};
 
 use super::error::WithdrawalError;
 
@@ -37,10 +43,8 @@ pub async fn handle_withdrawal(
 ) {
     match get_execute_withdrawal_call(withdrawal, account.clone()).await {
         Ok(execute_withdrawal_call) => {
-            let withdrawal_execution_multicall = account
-                .execute(vec![execute_withdrawal_call])
-                .send()
-                .await;
+            let withdrawal_execution_multicall =
+                account.execute(vec![execute_withdrawal_call]).send().await;
 
             match withdrawal_execution_multicall {
                 Ok(multicall) => {
@@ -70,8 +74,8 @@ async fn get_execute_withdrawal_call(
         account.clone(),
     );
 
-    let data_store_address =
-        env::var("DATA_STORE").map_err(|e| WithdrawalError::EnvVarNotSet("DATA_STORE".to_owned()))?;
+    let data_store_address = env::var("DATA_STORE")
+        .map_err(|e| WithdrawalError::EnvVarNotSet("DATA_STORE".to_owned()))?;
 
     let data_store_felt = FieldElement::from_hex_be(&data_store_address)
         .map_err(|e| WithdrawalError::ConversionError(format!("data_store_address: {}", e)))?;
@@ -87,7 +91,9 @@ async fn get_execute_withdrawal_call(
         .await
         .map_err(|e| WithdrawalError::SmartContractError(format!("Could not get market: {}", e)))?;
 
-    let price = price_setup(withdrawal.time_stamp, market.clone()).await.map_err(|e| WithdrawalError::PriceError(e.to_string()))?;
+    let price = price_setup(withdrawal.time_stamp, market.clone())
+        .await
+        .map_err(|e| WithdrawalError::PriceError(e.to_string()))?;
 
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
@@ -105,16 +111,20 @@ async fn get_execute_withdrawal_call(
         compacted_max_prices_indexes: vec![U256 { low: 0, high: 0 }],
         signatures: vec![
             vec![
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| WithdrawalError::ConversionError("Cannot convert string to felt".to_owned()))?,
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| WithdrawalError::ConversionError("Cannot convert string to felt".to_owned()))?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    WithdrawalError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    WithdrawalError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
             ],
             vec![
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| WithdrawalError::ConversionError("Cannot convert string to felt".to_owned()))?,
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| WithdrawalError::ConversionError("Cannot convert string to felt".to_owned()))?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    WithdrawalError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    WithdrawalError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
             ],
         ],
         price_feed_tokens: vec![],

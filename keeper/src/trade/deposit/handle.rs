@@ -88,7 +88,9 @@ async fn get_execute_deposit_call(
         .await
         .map_err(|e| DepositError::SmartContractError(format!("Could not get market: {}", e)))?;
 
-    let price = price_setup(deposit.time_stamp, market.clone()).await.map_err(|e| DepositError::PriceError(e.to_string()))?;
+    let price = price_setup(deposit.time_stamp, market.clone())
+        .await
+        .map_err(|e| DepositError::PriceError(e.to_string()))?;
 
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
@@ -106,16 +108,20 @@ async fn get_execute_deposit_call(
         compacted_max_prices_indexes: vec![U256 { low: 0, high: 0 }],
         signatures: vec![
             vec![
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| DepositError::ConversionError("Cannot convert string to felt".to_owned()))?,
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| DepositError::ConversionError("Cannot convert string to felt".to_owned()))?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    DepositError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    DepositError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
             ],
             vec![
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| DepositError::ConversionError("Cannot convert string to felt".to_owned()))?,
-                FieldElement::from_hex_be("0x")
-                    .map_err(|e| DepositError::ConversionError("Cannot convert string to felt".to_owned()))?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    DepositError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
+                FieldElement::from_hex_be("0x").map_err(|e| {
+                    DepositError::ConversionError("Cannot convert string to felt".to_owned())
+                })?,
             ],
         ],
         price_feed_tokens: vec![],

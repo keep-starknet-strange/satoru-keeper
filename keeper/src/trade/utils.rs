@@ -54,9 +54,11 @@ pub async fn get_set_primary_price_call(
         account.clone(),
     );
 
-    let oracle_address = env::var("ORACLE").map_err(|_e| TradeError::EnvVarNotSet("ORACLE".to_owned()))?;
+    let oracle_address =
+        env::var("ORACLE").map_err(|_e| TradeError::EnvVarNotSet("ORACLE".to_owned()))?;
     let oracle = Oracle::new(
-        FieldElement::from_hex_be(&oracle_address).map_err(|_e| TradeError::ConversionError("oracle_address".to_owned()))?,
+        FieldElement::from_hex_be(&oracle_address)
+            .map_err(|_e| TradeError::ConversionError("oracle_address".to_owned()))?,
         account.clone(),
     );
 
@@ -96,9 +98,10 @@ pub async fn price_setup(timestamp: String, market: Market) -> Result<U256, Trad
         .await
         .map_err(|e| TradeError::PragmaAPIError(format!("Price did not get returned: {}", e)))?;
 
-    let price_uint =
-        u128::from_str_radix(price_info.price.as_str().trim_start_matches("0x"), 16)
-            .map_err(|e| TradeError::ConversionError("Could not convert hex price to uint".to_owned()))?;
+    let price_uint = u128::from_str_radix(price_info.price.as_str().trim_start_matches("0x"), 16)
+        .map_err(|e| {
+        TradeError::ConversionError("Could not convert hex price to uint".to_owned())
+    })?;
 
     Ok(U256 {
         low: price_uint,
