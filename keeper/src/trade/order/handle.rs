@@ -85,7 +85,7 @@ async fn get_execute_order_call(
 
     let data_store = DataStore::new(data_store_felt, account.clone());
 
-    let market_key_felt = FieldElement::from_hex_be(&order.key)
+    let market_key_felt = FieldElement::from_hex_be(&order.market)
         .map_err(|e| OrderError::ConversionError(format!("order.key: {}", e)))?;
 
     let market = data_store
@@ -97,6 +97,8 @@ async fn get_execute_order_call(
     let price = price_setup(order.time_stamp, market.clone())
         .await
         .map_err(|e| OrderError::PriceError(e.to_string()))?;
+
+    let price_formated = U256 {low: keep_first_digits(price.low, 4), high: 0};
 
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
@@ -110,7 +112,7 @@ async fn get_execute_order_call(
             high: 0,
         }],
         compacted_min_prices_indexes: vec![U256 { low: 0, high: 0 }],
-        compacted_max_prices: vec![price, U256 { low: 1, high: 0 }], // TODO replace 1 by real short token price
+        compacted_max_prices: vec![price_formated, U256 { low: 1, high: 0 }], // TODO replace 1 by real short token price
         compacted_max_prices_indexes: vec![U256 { low: 0, high: 0 }],
         signatures: vec![
             vec![
@@ -138,4 +140,11 @@ async fn get_execute_order_call(
             .map_err(|e| OrderError::ConversionError("Cannot convert string to felt".to_owned()))?,
         &set_prices_params,
     ))
+}
+
+
+fn keep_first_digits(number: u128, number_of_digits: u64) -> u128 {
+    let number_str = number.to_string(); // Convert number to string and handle negative numbers
+    let first_four: String = number_str.chars().take(number_of_digits).collect(); // Take the first four characters
+    first_four.parse().unwrap() // Convert the first four characters back to an integer
 }
