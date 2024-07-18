@@ -98,7 +98,10 @@ async fn get_execute_order_call(
         .await
         .map_err(|e| OrderError::PriceError(e.to_string()))?;
 
-    let price_formated = U256 {low: keep_first_digits(price.low, 4), high: 0};
+    let price_formated = U256 {
+        low: keep_first_digits(price.low, 4),
+        high: 0,
+    };
 
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
@@ -142,9 +145,11 @@ async fn get_execute_order_call(
     ))
 }
 
-
 fn keep_first_digits(number: u128, number_of_digits: u64) -> u128 {
     let number_str = number.to_string(); // Convert number to string and handle negative numbers
-    let first_four: String = number_str.chars().take(number_of_digits).collect(); // Take the first four characters
+    let first_four: String = number_str
+        .chars()
+        .take(number_of_digits.try_into().unwrap())
+        .collect(); // Take the first four characters
     first_four.parse().unwrap() // Convert the first four characters back to an integer
 }
