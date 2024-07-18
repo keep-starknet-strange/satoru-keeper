@@ -85,8 +85,16 @@ async fn get_execute_order_call(
 
     let data_store = DataStore::new(data_store_felt, account.clone());
 
-    let market_key_felt = FieldElement::from_hex_be(&order.market)
-        .map_err(|e| OrderError::ConversionError(format!("order.key: {}", e)))?;
+    let market_key_felt = if order.order_type == Some("MarketSwap".to_owned()) {
+        // TODO set prices for all markets in swap_path
+        let swap_paths = parse_hex_addresses(order.swap_path.unwrap())
+            .map_err(|e| OrderError::ConversionError("Could not parse swap path".to_owned()))?;
+        FieldElement::from_hex_be(swap_paths[0].as_str())
+            .map_err(|e| OrderError::ConversionError(format!("order.key: {}", e)))?
+    } else {
+        FieldElement::from_hex_be(&order.market)
+            .map_err(|e| OrderError::ConversionError(format!("order.key: {}", e)))?
+    };
 
     let market = data_store
         .get_market(&ContractAddress::from(market_key_felt))
@@ -154,6 +162,15 @@ fn keep_first_digits(number: u128, number_of_digits: u64) -> u128 {
     first_four.parse().unwrap() // Convert the first four characters back to an integer
 }
 
+fn parse_hex_addresses(hex_string: String) -> Result<Vec<String>, String> {
+    hex_string
+        .split(',')
+        .map(|s| {
+            s.parse::<String>()
+                .map_err(|e| format!("Failed to parse '{}': {}", s, e))
+        })
+        .collect()
+}
 
 #[cfg(test)]
 mod tests {
@@ -164,5 +181,16 @@ mod tests {
         let price = 3456001111;
         let new_price = keep_first_digits(price, 4);
         assert_eq!(new_price, 3456, "Price is not formated well.");
+    }
+
+    #[test]
+    fn test_parse_swap_path() {
+        let swap_path = "0x111,0x222".to_owned();
+        let result = parse_hex_addresses(swap_path).unwrap();
+        assert_eq!(
+            result,
+            vec!["0x111".to_owned(), "0x222".to_owned()],
+            "Price is not formated well."
+        );
     }
 }
