@@ -153,3 +153,16 @@ fn keep_first_digits(number: u128, number_of_digits: u64) -> u128 {
         .collect(); // Take the first four characters
     first_four.parse().unwrap() // Convert the first four characters back to an integer
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_data() {
+        let price = 3456001111;
+        let new_price = keep_first_digits(price, 4);
+        assert_eq!(new_price, 3456, "Price is not formated well.");
+    }
+}
