@@ -20,6 +20,7 @@ dotenv = "0.15.0"
 actix-web = "4.7.0"
 thiserror = "1.0.61"
 url = "2.5.1"
+anyhow = "1.0.86"
 
 
 [dev-dependencies]

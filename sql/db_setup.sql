@@ -9,6 +9,7 @@ INSERT INTO last_indexed_block (block_number) VALUES (0) ON CONFLICT (id) DO NOT
 
 CREATE TABLE IF NOT EXISTS orders (
     block_number BIGINT NOT NULL,
+    time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
     key TEXT,
     order_type TEXT,
@@ -73,11 +74,10 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     callback_gas_limit BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS market_created (
+CREATE TABLE IF NOT EXISTS markets (
     block_number BIGINT NOT NULL,
     time_stamp TEXT,
     transaction_hash TEXT NOT NULL,
-    key TEXT,
     creator TEXT,
     market_token TEXT,
     index_token TEXT,
@@ -143,6 +143,23 @@ CREATE TABLE IF NOT EXISTS order_executed (
     key TEXT,
     secondary_order_type TEXT,
     PRIMARY KEY (block_number, transaction_hash)
+);
+
+CREATE TABLE IF NOT EXISTS position (
+    key TEXT NOT NULL,
+    account TEXT NOT NULL,
+    market TEXT NOT NULL,
+    collateral_token TEXT NOT NULL,
+    size_in_usd NUMERIC,
+    size_in_tokens NUMERIC,
+    collateral_amount NUMERIC,
+    borrowing_factor NUMERIC,
+    funding_fee_amount_per_size NUMERIC,
+    long_token_claimable_funding_amount_per_size NUMERIC,
+    short_token_claimable_funding_amount_per_size NUMERIC,
+    increased_at_block BIGINT,
+    decreased_at_block BIGINT,
+    is_long BOOLEAN
 );
 
 -- Drop the existing function and triggers if it exists
