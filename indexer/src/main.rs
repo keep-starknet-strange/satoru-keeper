@@ -15,6 +15,7 @@ use crate::events::{
     deposit::Deposit, market_created::MarketCreated, order::Order, order_executed::OrderExecuted,
     pool_amount_updated::PoolAmountUpdated, swap_fees_collected::SwapFeesCollected,
     swap_info::SwapInfo, withdrawal::Withdrawal, position::Position,
+    swap_info::SwapInfo, withdrawal::Withdrawal, position::Position,
 };
 
 #[tokio::main]
@@ -104,6 +105,7 @@ async fn main() -> Result<(), Error> {
         events::handler::EventIndexer::new(&provider, &pool, event_processors, head_chain);
 
     let mut current_block = start_block;
+    let mut current_block = start_block;
 
     loop {
         let latest_block_on_chain = match provider.block_number().await {
@@ -121,7 +123,23 @@ async fn main() -> Result<(), Error> {
             } else {
                 current_block += 1;
             }
+        let latest_block_on_chain = match provider.block_number().await {
+            Ok(block) => block as i64,
+            Err(e) => {
+                eprintln!("Error fetching latest block number: {:?}", e);
+                sleep(Duration::from_secs(10)).await;
+                continue;
+            }
+        };
+
+        if current_block < latest_block_on_chain {
+            if let Err(e) = indexer.fetch_and_process_events(current_block as u64).await {
+                eprintln!("Error processing pending events: {:?}", e);
+            } else {
+                current_block += 1;
+            }
         }
+
 
         sleep(Duration::from_secs(10)).await;
     }
