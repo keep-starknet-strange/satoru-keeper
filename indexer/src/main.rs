@@ -115,7 +115,7 @@ async fn main() -> Result<(), Error> {
             }
         };
 
-        if current_block <= latest_block_on_chain {
+        if current_block < latest_block_on_chain {
             if let Err(e) = indexer.fetch_and_process_events(current_block as u64).await {
                 eprintln!("Error processing pending events: {:?}", e);
             } else {
