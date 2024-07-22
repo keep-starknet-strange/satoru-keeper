@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS deposits (
     execution_fee BIGINT,
     callback_gas_limit BIGINT
 );
+
 CREATE TABLE IF NOT EXISTS withdrawals (
     block_number BIGINT NOT NULL,
     time_stamp TEXT,
@@ -74,9 +75,10 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     callback_gas_limit BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS markets (
+CREATE TABLE IF NOT EXISTS market_created(
     block_number BIGINT NOT NULL,
     time_stamp TEXT,
+    key TEXT,
     transaction_hash TEXT NOT NULL,
     creator TEXT,
     market_token TEXT,
