@@ -29,8 +29,7 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
 
     dotenv().ok();
-    env_logger::init_from_env(Env::default().default_filter_or("info"));
-    let pool = sqlx::PgPool::connect("postgres://postgres:123@localhost:5432/zohal")
+    let pool = sqlx::PgPool::connect("postgres://postgres:123@138.201.141.41:5432/zohal")
         .await
         .unwrap();
 
