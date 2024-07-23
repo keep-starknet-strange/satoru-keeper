@@ -11,52 +11,39 @@ use starknet::{
     signers::LocalWallet,
 };
 
-use crate::{trade::utils::price_setup, types::SatoruAction};
+use crate::{
+    trade::utils::price_setup,
+    types::{DataStore, Market, SatoruAction},
+};
+
+use super::error::TriggerError;
 
 abigen!(
     OrderHandler,
     "./resources/satoru_OrderHandler.contract_class.json",
 );
 
-abigen!(
-    DataStore,
-    "./resources/satoru_DataStore.contract_class.json",
-    type_aliases {
-        satoru::order::order::OrderType as OrderType_;
-        satoru::data::data_store::DataStore::Event as Event_;
-        satoru::order::order::DecreasePositionSwapType as Decrease_;
-        satoru::utils::span32::Span32 as Span32_;
-    }
-);
-
-abigen!(
-    Oracle,
-    "./resources/satoru_Oracle.contract_class.json",
-    type_aliases {
-        satoru::price::price::Price as Price_;
-        satoru::oracle::oracle::Oracle::Event as Event__;
-        satoru::oracle::oracle_utils::SetPricesParams as SetPricesParams_;
-    }
-);
-
 pub async fn execute_trigger_positions(
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
-    order: Order,
-) {
-    let execute_order_call = get_execute_order_call(order, account.clone()).await;
+    orders: Vec<SatoruAction>,
+) -> Result<bool, TriggerError> {
+    for order in orders {
+        let execute_order_call = get_execute_order_call(order, account.clone()).await?;
 
-    let _order_execution_multicall = account
-        .execute(vec![execute_order_call])
-        .send()
-        .await
-        .expect("Order execution multicall failed");
-    // TODO: poll transaction status
+        let _order_execution_multicall = account
+            .execute(vec![execute_order_call])
+            .send()
+            .await
+            .expect("Order execution multicall failed");
+        // TODO: poll transaction status
+    }
+    Ok(true)
 }
 
 async fn get_execute_order_call(
-    order: Order,
+    order: SatoruAction,
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
-) -> Call {
+) -> Result<Call, TriggerError> {
     let order_handler_address =
         env::var("ORDER_HANDLER").expect("ORDER_HANDLER env variable not set");
     let order_handler = OrderHandler::new(
@@ -72,15 +59,25 @@ async fn get_execute_order_call(
         account.clone(),
     );
 
-    let market = data_store
-        .get_market(&ContractAddress::from(
-            FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
-        ))
+    let market_key_felt = FieldElement::from_hex_be(&order.market)
+        .map_err(|e| TriggerError::ConversionError(format!("order.market: {}", e)))?;
+
+    let market_datastore = data_store
+        .get_market(&ContractAddress::from(market_key_felt))
         .call()
         .await
-        .expect("Could not get market");
+        .map_err(|e| TriggerError::SmartContractError(format!("Could not get market: {}", e)))?;
+    let market: Market = Market {
+        // TODO optimize
+        long_token: market_datastore.long_token,
+        market_token: market_datastore.market_token,
+        index_token: market_datastore.index_token,
+        short_token: market_datastore.short_token,
+    };
 
-    let price = price_setup(order.time_stamp, market.clone()).await;
+    let price = price_setup(order.time_stamp, market.clone())
+        .await
+        .map_err(|e| TriggerError::PriceError(e.to_string()))?;
 
     let set_prices_params: SetPricesParams = SetPricesParams {
         signer_info: U256 { low: 1, high: 0 },
@@ -109,8 +106,8 @@ async fn get_execute_order_call(
         price_feed_tokens: vec![],
     };
 
-    order_handler.execute_order_getcall(
+    Ok(order_handler.execute_order_getcall(
         &FieldElement::from_hex_be(&order.key).expect("Cannot convert string to felt"),
         &set_prices_params,
-    )
+    ))
 }

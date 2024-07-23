@@ -1,13 +1,44 @@
 use std::vec;
 
-use cainome::cairo_serde::{ContractAddress, U256};
+use cainome::{
+    cairo_serde::{ContractAddress, U256},
+    rs::abigen,
+};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, Decode, FromRow, Row};
+use sqlx::{postgres::PgRow, FromRow, Row};
 use starknet::core::types::FieldElement;
 
-use crate::liquidation::utils::{
-    DecreasePositionSwapType, Market, Order, OrderType, Position, Span32,
-};
+abigen!(
+    DataStore,
+    "./resources/satoru_DataStore.contract_class.json",
+    type_aliases {
+        satoru::order::order::OrderType as Unused6;
+        satoru::data::data_store::DataStore::Event as Unused7;
+        satoru::order::order::DecreasePositionSwapType as Unused8;
+        satoru::utils::span32::Span32 as Unused9;
+        satoru::market::market::Market as MarketDataStore;
+        satoru::order::order::Order as Unused11;
+        satoru::position::position::Position as Unused12
+    }
+);
+
+abigen!(
+    Oracle,
+    "./resources/satoru_Oracle.contract_class.json",
+    type_aliases {
+        satoru::data::data_store::IDataStoreDispatcher as Unused1;
+        satoru::oracle::oracle::Oracle::Event as Unused13;
+    }
+);
+
+abigen!(Reader, "./resources/satoru_Reader.contract_class.json",
+    type_aliases {
+        satoru::withdrawal::withdrawal::Withdrawal as Unused2;
+        satoru::utils::i256::i256 as Unused3;
+        satoru::price::price::Price as PriceReader;
+        satoru::deposit::deposit::Deposit as Unused5;
+    }
+);
 
 // An enum representing the types of database actions.
 #[derive(Deserialize, Debug)]
@@ -64,32 +95,32 @@ pub struct SatoruAction {
 }
 
 // A struct of a Satoru Position.
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
-pub struct Position_ {
-    pub key: String,
-    pub account: String,
-    pub market: String,
-    pub collateral_token: String,
-    pub size_in_usd: u128,
-    pub size_in_tokens: u128,
-    pub collateral_amount: u128,
-    pub borrowing_factor: u128,
-    pub funding_fee_amount_per_size: u128,
-    pub long_token_claimable_funding_amount_per_size: u128,
-    pub short_token_claimable_funding_amount_per_size: u128,
-    pub increased_at_block: u64,
-    pub decreased_at_block: u64,
-    pub is_long: bool,
-}
+// #[derive(Debug, Deserialize, Serialize, Clone, Default)]
+// pub struct Position {
+//     pub key: String,
+//     pub account: String,
+//     pub market: String,
+//     pub collateral_token: String,
+//     pub size_in_usd: u128,
+//     pub size_in_tokens: u128,
+//     pub collateral_amount: u128,
+//     pub borrowing_factor: u128,
+//     pub funding_fee_amount_per_size: u128,
+//     pub long_token_claimable_funding_amount_per_size: u128,
+//     pub short_token_claimable_funding_amount_per_size: u128,
+//     pub increased_at_block: u64,
+//     pub decreased_at_block: u64,
+//     pub is_long: bool,
+// }
 
 // A struct of a Satoru Market.
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
-pub struct Market_ {
-    pub market_token: String,
-    pub index_token: String,
-    pub long_token: String,
-    pub short_token: String,
-}
+// #[derive(Debug, Deserialize, Serialize, Clone, Default)]
+// pub struct Market {
+//     pub market_token: String,
+//     pub index_token: String,
+//     pub long_token: String,
+//     pub short_token: String,
+// }
 
 // A struct of a Satoru Market.
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -117,9 +148,13 @@ impl<'r> FromRow<'r, PgRow> for SatoruAction {
                 .expect("Could not get block_number"),
             10,
         )
-        .expect("failed to convert string to u64");;
-        let timestamp: &str = row.try_get("time_stamp").expect("Couldn't decode time_stamp");
-        let transaction_hash: &str = row.try_get("time_stamp").expect("Couldn't decode time_stamp");
+        .expect("failed to convert string to u64");
+        let timestamp: &str = row
+            .try_get("time_stamp")
+            .expect("Couldn't decode time_stamp");
+        let transaction_hash: &str = row
+            .try_get("time_stamp")
+            .expect("Couldn't decode time_stamp");
         let key: &str = row.try_get("key").expect("Couldn't decode position");
         let account: &str = row.try_get("account").expect("Couldn't decode account");
         let receiver: &str = row.try_get("receiver").expect("Couldn't decode receiver");
@@ -152,13 +187,10 @@ impl<'r> FromRow<'r, PgRow> for SatoruAction {
         let order_type: Option<&str> = row
             .try_get("order_type")
             .expect("Couldn't decode order_type");
-        let decrease_position_swap_type: Option<&str> = row
-            .try_get("decrease_position_swap_type")
-            .ok();
-        let initial_collateral_token: Option<&str> = row
-            .try_get("initial_collateral_token").ok();
-        let swap_path: Option<&str> = row
-            .try_get::<'r, &str, _>("swap_path").ok();
+        let decrease_position_swap_type: Option<&str> =
+            row.try_get("decrease_position_swap_type").ok();
+        let initial_collateral_token: Option<&str> = row.try_get("initial_collateral_token").ok();
+        let swap_path: Option<&str> = row.try_get::<'r, &str, _>("swap_path").ok();
         let size_delta_usd: Option<u128> = u128::from_str_radix(
             row.try_get::<'r, &str, _>("size_delta_usd")
                 .expect("Could not get size_delta_usd"),
@@ -192,8 +224,10 @@ impl<'r> FromRow<'r, PgRow> for SatoruAction {
         let is_long: Option<bool> = row.try_get("is_long").ok();
         let is_frozen: Option<bool> = row.try_get("is_frozen").ok();
 
-        let initial_long_token: Option<&str> = row.try_get::<'r, &str, _>("initial_long_token").ok();
-        let initial_short_token: Option<&str> = row.try_get::<'r, &str, _>("initial_short_token").ok();
+        let initial_long_token: Option<&str> =
+            row.try_get::<'r, &str, _>("initial_long_token").ok();
+        let initial_short_token: Option<&str> =
+            row.try_get::<'r, &str, _>("initial_short_token").ok();
         let initial_long_token_amount: Option<u128> = u128::from_str_radix(
             row.try_get::<'r, &str, _>("initial_long_token_amount")
                 .expect("Could not get initial_long_token_amount"),
@@ -248,7 +282,7 @@ impl<'r> FromRow<'r, PgRow> for SatoruAction {
             execution_fee,
             callback_gas_limit,
             updated_at_block,
-        
+
             // Order specific.
             order_type: order_type.map(|s| s.to_string()),
             decrease_position_swap_type: decrease_position_swap_type.map(|s| s.to_string()),
@@ -261,19 +295,19 @@ impl<'r> FromRow<'r, PgRow> for SatoruAction {
             min_output_amount,
             is_long,
             is_frozen,
-        
+
             // Deposit specific.
             initial_long_token: initial_long_token.map(|s| s.to_string()),
             initial_short_token: initial_short_token.map(|s| s.to_string()),
             initial_long_token_amount,
             initial_short_token_amount,
             min_market_tokens,
-        
+
             // Withdrawal specific
             market_token_amount,
             min_long_token_amount,
             min_short_token_amount,
-        
+
             // Deposit & Withdrawal shared.
             long_token_swap_path: long_token_swap_path.map(|s| s.to_string()),
             short_token_swap_path: short_token_swap_path.map(|s| s.to_string()),
@@ -515,7 +549,7 @@ impl<'r> FromRow<'r, PgRow> for Order {
                 FieldElement::from_hex_be(initial_collateral_token)
                     .expect("Could not convert initial_collateral_token to felt"),
             ),
-            swap_path: Span32 { snapshot: vec![] },
+            swap_path: Span32 { snapshot: vec![] }, // TODO input real swap path
             size_delta_usd: U256 {
                 low: size_delta_usd,
                 high: 0,
