@@ -1,6 +1,6 @@
 use sqlx::{Error, PgPool};
 
-use crate::liquidation::utils::Market;
+use crate::types::Market;
 
 pub async fn get_market(market_token: String, pool: &PgPool) -> Result<Market, Error> {
     let market: Result<Market, Error> =

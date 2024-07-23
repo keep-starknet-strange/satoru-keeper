@@ -1,6 +1,6 @@
-use std::{env, sync::Arc, vec};
+use std::{env, sync::Arc};
 
-use cainome::{cairo_serde::ContractAddress, rs::abigen};
+use cainome::cairo_serde::ContractAddress;
 use starknet::{
     accounts::SingleOwnerAccount,
     core::types::FieldElement,
@@ -10,7 +10,9 @@ use starknet::{
 
 use super::error::LiquidationError;
 
-abigen!(Reader, "./resources/satoru_Reader.contract_class.json",);
+use crate::types::{
+    IDataStoreDispatcher, IReferralStorageDispatcher, Market, MarketPrices, Position, Reader,
+};
 
 // pub fn is_liquidatable(
 //     position: Position,
@@ -198,6 +200,6 @@ pub async fn is_liquidatable_call(
 
     match is_position_liquidatable_result {
         Ok(is_position_liquidatable) => return Ok(is_position_liquidatable),
-        Err(e) => return Err(LiquidationError::IsLiquidatableCallFailed()),
+        Err(_e) => return Err(LiquidationError::IsLiquidatableCallFailed()),
     };
 }

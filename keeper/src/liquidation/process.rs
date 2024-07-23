@@ -9,12 +9,11 @@ use starknet::{
 };
 
 use crate::{
-    liquidation::utils::{is_liquidatable_call, MarketPrices},
+    liquidation::utils::is_liquidatable_call,
     price::utils::get_market_prices,
     query::get_market,
+    types::{MarketPrices, Position},
 };
-
-use super::utils::Position;
 
 pub async fn get_liquidatable_positions(
     pool: &PgPool,
@@ -42,7 +41,7 @@ pub async fn get_liquidatable_positions(
         let market_prices: MarketPrices = get_market_prices(market.clone(), timestamp.to_string())
             .await
             .expect(format!("Could not get market prices for market: :{:?}", market).as_str());
-        let (is_liquidatable, reason) = is_liquidatable_call(
+        let (is_liquidatable, _reason) = is_liquidatable_call(
             Arc::clone(&account),
             position.clone(),
             market,
