@@ -157,7 +157,7 @@ async fn create_order(
 
     let result = sqlx::query!(
         r#"
-        INSERT INTO orders (
+        INSERT INTO orders_front (
             block_number, time_stamp, transaction_hash, key, order_type,
             decrease_position_swap_type, account, receiver, callback_contract,
             ui_fee_receiver, market, initial_collateral_token, swap_path,
@@ -212,7 +212,7 @@ async fn get_orders(pool: web::Data<PgPool>) -> impl Responder {
                size_delta_usd, initial_collateral_delta_amount, trigger_price,
                acceptable_price, execution_fee, callback_gas_limit, min_output_amount,
                updated_at_block, is_long, is_frozen
-        FROM orders
+        FROM orders_front
         "#
     )
     .fetch_all(pool.get_ref())
