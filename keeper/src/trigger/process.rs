@@ -71,36 +71,38 @@ pub fn is_limit_order(order_type: String) -> bool {
 }
 
 pub fn should_trigger(order: SatoruAction, market_prices: MarketPrices) -> bool {
-    // TODO check when to use max or min
-    // TODO depending on is_long
+    let trigger_price = U256 {
+        low: order.trigger_price.unwrap(),
+        high: 0,
+    };
+    let is_long = order.is_long.unwrap();
+    let min_price = market_prices.index_token_price.min;
+    let max_price = market_prices.index_token_price.max;
     match order.order_type.unwrap().as_str() {
         "LimitSwap" => {
-            market_prices.index_token_price.max
-                <= U256 {
-                    low: order.trigger_price.unwrap(),
-                    high: 0,
-                }
+            // TODO
+            true
         }
         "LimitIncrease" => {
-            market_prices.index_token_price.max
-                <= U256 {
-                    low: order.trigger_price.unwrap(),
-                    high: 0,
-                }
+            if is_long {
+                max_price <= trigger_price
+            } else {
+                min_price >= trigger_price
+            }
         }
         "LimitDecrease" => {
-            market_prices.index_token_price.max
-                >= U256 {
-                    low: order.trigger_price.unwrap(),
-                    high: 0,
-                }
+            if is_long {
+                min_price >= trigger_price
+            } else {
+                max_price <= trigger_price
+            }
         }
         "StopLossDecrease" => {
-            market_prices.index_token_price.max
-                <= U256 {
-                    low: order.trigger_price.unwrap(),
-                    high: 0,
-                }
+            if is_long {
+                min_price <= trigger_price
+            } else {
+                max_price >= trigger_price
+            }
         }
         _ => false,
     }
