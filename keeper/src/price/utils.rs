@@ -7,8 +7,8 @@ use std::env;
 use super::error::PragmaAPIError;
 
 use crate::{
-    liquidation::utils::{Market, MarketPrices, Price},
     trade::utils::get_token_name_from_address,
+    types::{Market, MarketPrices, PriceReader},
 };
 
 #[derive(Deserialize, Clone)]
@@ -105,7 +105,7 @@ pub async fn get_market_prices(
     )
     .expect("Could not convert short token hex price to uint");
     Ok(MarketPrices {
-        index_token_price: Price {
+        index_token_price: PriceReader {
             min: U256 {
                 low: index_token_price,
                 high: 0,
@@ -115,7 +115,7 @@ pub async fn get_market_prices(
                 high: 0,
             },
         },
-        long_token_price: Price {
+        long_token_price: PriceReader {
             min: U256 {
                 low: long_token_price,
                 high: 0,
@@ -125,7 +125,7 @@ pub async fn get_market_prices(
                 high: 0,
             },
         },
-        short_token_price: Price {
+        short_token_price: PriceReader {
             min: U256 {
                 low: short_token_price,
                 high: 0,

@@ -10,11 +10,10 @@ use starknet::{
 
 use crate::{
     price::utils::{get_pragma_price, PathParams, QueryParams},
-    trade::order::handle::{DataStore, Market, Oracle},
-    types::SatoruAction,
+    types::{DataStore, Market, Oracle, Price, SatoruAction},
 };
 
-use super::{error::TradeError, order::handle::Price_};
+use super::error::TradeError;
 
 pub fn get_token_name_from_address(token_address: ContractAddress) -> String {
     match token_address {
@@ -50,7 +49,7 @@ pub async fn get_set_primary_price_call(
         env::var("DATA_STORE").map_err(|_e| TradeError::EnvVarNotSet("DATA_STORE".to_owned()))?;
     let data_store = DataStore::new(
         FieldElement::from_hex_be(&data_store_address)
-            .map_err(|e| TradeError::ConversionError("data_store_address".to_owned()))?,
+            .map_err(|_e| TradeError::ConversionError("data_store_address".to_owned()))?,
         account.clone(),
     );
 
@@ -62,19 +61,26 @@ pub async fn get_set_primary_price_call(
         account.clone(),
     );
 
-    let market = data_store
-        .get_market(&ContractAddress::from(
-            FieldElement::from_hex_be(&trade.key).expect("Cannot convert string to felt"),
-        ))
+    let market_key_felt = FieldElement::from_hex_be(&trade.market)
+        .map_err(|e| TradeError::ConversionError(format!("trade.key: {}", e)))?;
+
+    let market_datastore = data_store
+        .get_market(&ContractAddress::from(market_key_felt))
         .call()
         .await
-        .map_err(|_e| TradeError::SmartContractError("Could not get market".to_owned()))?;
-
+        .map_err(|e| TradeError::SmartContractError(format!("Could not get market: {}", e)))?;
+    let market: Market = Market {
+        // TODO optimize
+        long_token: market_datastore.long_token,
+        market_token: market_datastore.market_token,
+        index_token: market_datastore.index_token,
+        short_token: market_datastore.short_token,
+    };
     let price = price_setup(trade.time_stamp, market.clone()).await?;
 
     Ok(oracle.set_primary_price_getcall(
         &market.long_token,
-        &Price_ {
+        &Price {
             min: price,
             max: price,
         },
@@ -99,7 +105,7 @@ pub async fn price_setup(timestamp: String, market: Market) -> Result<U256, Trad
         .map_err(|e| TradeError::PragmaAPIError(format!("Price did not get returned: {}", e)))?;
 
     let price_uint = u128::from_str_radix(price_info.price.as_str().trim_start_matches("0x"), 16)
-        .map_err(|e| {
+        .map_err(|_e| {
         TradeError::ConversionError("Could not convert hex price to uint".to_owned())
     })?;
 
@@ -117,7 +123,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_price_setup() {
-        let api_key = env::var("PRAGMA_API_KEY").or_else(|e| Err(PragmaAPIError::APIKeyNotSet()));
+        let api_key = env::var("PRAGMA_API_KEY").or_else(|_e| Err(PragmaAPIError::APIKeyNotSet()));
         match api_key {
             Ok(_) => {
                 let market = Market {

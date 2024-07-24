@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use env_logger::Env;
-use log::info;
+use log::{error, info};
 use sqlx::{Pool, Postgres};
 use std::{env, sync::Arc};
 
@@ -12,7 +12,7 @@ use keeper_satoru::{
         deposit::handle::handle_deposit, order::handle::handle_order,
         withdrawal::handle::handle_withdrawal,
     },
-    trigger::process::get_triggerable_orders,
+    trigger::{execution::execute_trigger_positions, process::get_triggerable_orders},
     types::{ActionType, Payload},
 };
 use starknet::{
@@ -119,7 +119,9 @@ async fn liquidation_mode(
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
     pool: Pool<Postgres>,
 ) {
-    while (true) {
+    info!("Running liquidation mode...");
+
+    loop {
         let positions_to_liquidate = get_liquidatable_positions(&pool, Arc::clone(&account)).await;
     }
 }
@@ -128,7 +130,24 @@ async fn trigger_mode(
     account: Arc<SingleOwnerAccount<JsonRpcClient<HttpTransport>, LocalWallet>>,
     pool: Pool<Postgres>,
 ) {
-    while (true) {
+    info!("Running trigger mode...");
+
+    loop {
         let positions_to_trigger = get_triggerable_orders(&pool, Arc::clone(&account)).await;
+        match positions_to_trigger {
+            Ok(positions) => {
+                let trigger_execution_result =
+                    execute_trigger_positions(Arc::clone(&account), positions).await;
+                match trigger_execution_result {
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!("Error occured while executing trigerrable order: {:?}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Error occured while getting trigerrable order: {:?}", e);
+            }
+        }
     }
 }
