@@ -80,8 +80,7 @@ pub fn should_trigger(order: SatoruAction, market_prices: MarketPrices) -> bool 
     let max_price = market_prices.index_token_price.max;
     match order.order_type.unwrap().as_str() {
         "LimitSwap" => {
-            // TODO
-            true
+            trigger_price >= max_price
         }
         "LimitIncrease" => {
             if is_long {
