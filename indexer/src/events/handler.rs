@@ -5,13 +5,15 @@ use sqlx::postgres::PgPool;
 use starknet::core::types::{BlockId, BlockTag, EventFilter, FieldElement, MaybePendingBlockWithTxHashes};
 use starknet::providers::jsonrpc::{HttpTransport, JsonRpcClient};
 use starknet::providers::Provider;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use tokio::sync::Mutex;
 
 pub struct EventIndexer<'a> {
     provider: &'a JsonRpcClient<HttpTransport>,
     pool: &'a PgPool,
     event_processors: HashMap<&'static str, Box<dyn EventProcessor + Send + Sync>>,
     head_chain: HeadChain,
+    processed_transactions: Mutex<HashSet<String>>,
 }
 
 impl<'a> EventIndexer<'a> {
@@ -26,6 +28,7 @@ impl<'a> EventIndexer<'a> {
             pool,
             event_processors,
             head_chain,
+            processed_transactions: Mutex::new(HashSet::new()),
         }
     }
 
@@ -37,11 +40,12 @@ impl<'a> EventIndexer<'a> {
             .collect();
 
         let contract_address = FieldElement::from_hex_be(&get_contract_address()).unwrap();
+
         let event_filter = EventFilter {
             from_block: Some(BlockId::Number(from_block)),
             to_block: Some(BlockId::Tag(BlockTag::Latest)),
             address: Some(contract_address),
-            keys: Some(vec![keys]),
+            keys: Some(vec![keys])
         };
 
         let events_page = self
@@ -51,76 +55,104 @@ impl<'a> EventIndexer<'a> {
             .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
 
         for event in events_page.events {
-            let block = self.provider.get_block_with_tx_hashes(BlockId::Number(event.block_number)).await.unwrap();
-            let timestamp = match block {
-                MaybePendingBlockWithTxHashes::Block(block) => Some(block.timestamp.to_string()),
-                MaybePendingBlockWithTxHashes::PendingBlock(block) => Some(block.timestamp.to_string()),
-            };
-            let generic_event = GenericEvent {
-                block_number: event.block_number as i64,
-                timestamp,
-                transaction_hash: hex::encode(event.transaction_hash.to_bytes_be()),
-                key: event.keys.first().map(|k| hex::encode(k.to_bytes_be())),
-                data: event.data.iter().map(|fe| hex::encode(fe.to_bytes_be())).collect::<Vec<_>>().join(","),
-            };
-            if let Some(key) = event.keys.first() {
-                let key_str = hex::encode(key.to_bytes_be());
-                if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
-                    processor.process_event(generic_event.clone(), &self.pool).await?;
+            if let Some(block_number) = event.block_number {
+                let block = self.provider.get_block_with_tx_hashes(BlockId::Number(block_number)).await.unwrap();
+                let timestamp = match block {
+                    MaybePendingBlockWithTxHashes::Block(block) => Some(block.timestamp.to_string()),
+                    MaybePendingBlockWithTxHashes::PendingBlock(block) => Some(block.timestamp.to_string()),
+                };
+                let generic_event = GenericEvent {
+                    block_number: block_number as i64,
+                    timestamp,
+                    transaction_hash: hex::encode(event.transaction_hash.to_bytes_be()),
+                    key: event.keys.first().map(|k| hex::encode(k.to_bytes_be())),
+                    data: event.data.iter().map(|fe| hex::encode(fe.to_bytes_be())).collect::<Vec<_>>().join(","),
+                };
+                if let Some(key) = event.keys.first() {
+                    let key_str = hex::encode(key.to_bytes_be());
+                    if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
+                        processor.process_event(generic_event.clone(), &self.pool).await?;
+                    }
+                    self.head_chain.update_last_block_indexed(block_number as i64).await?;
                 }
-                self.head_chain.update_last_block_indexed(event.block_number as i64).await?;
-            }
+            }    
         }
 
         Ok(())
     }
 
     pub async fn fetch_pending_events(&self) -> Result<(), sqlx::Error> {
-        let event_filter = EventFilter {
-            from_block: Some(BlockId::Tag(BlockTag::Pending)),
-            to_block: Some(BlockId::Tag(BlockTag::Pending)),
-            address: Some(
-                FieldElement::from_hex_be(
-                    "0x2cf721c0387704095d6b2205b46e17d7768fa55c2f1a1087425b877b72937db",
-                )
-                .unwrap(),
-            ),
-            keys: Some(vec![self
-                .event_processors
-                .keys()
-                .map(|key| FieldElement::from_hex_be(key).unwrap())
-                .collect()]),
-        };
+        let contract_address = FieldElement::from_hex_be(&get_contract_address()).unwrap();
 
-        let events_page = self
-            .provider
-            .get_events(event_filter, None, 100)
-            .await
-            .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
+        let mut continuation_token: Option<String> = None;
 
-        for event in events_page.events {
-            let block = self.provider.get_block_with_tx_hashes(BlockId::Number(event.block_number)).await.unwrap();
-            let timestamp = match block {
-                MaybePendingBlockWithTxHashes::Block(block) => Some(block.timestamp.to_string()),
-                MaybePendingBlockWithTxHashes::PendingBlock(block) => Some(block.timestamp.to_string()),
+        loop {
+            let keys: Vec<FieldElement> = self
+            .event_processors
+            .keys()
+            .map(|key| FieldElement::from_hex_be(key).unwrap())
+            .collect();
+            
+            let event_filter = EventFilter {
+                from_block: Some(BlockId::Tag(BlockTag::Pending)),
+                to_block: Some(BlockId::Tag(BlockTag::Pending)),
+                address: Some(contract_address),
+                keys: Some(vec![keys]),
             };
-            let generic_event = GenericEvent {
-                block_number: event.block_number as i64,
-                timestamp,
-                transaction_hash: hex::encode(event.transaction_hash.to_bytes_be()),
-                key: event.keys.first().map(|k| hex::encode(k.to_bytes_be())),
-                data: event.data.iter().map(|fe| hex::encode(fe.to_bytes_be())).collect::<Vec<_>>().join(","),
-            };
-            if let Some(key) = event.keys.first() {
-                let key_str = hex::encode(key.to_bytes_be());
-                if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
-                    processor.process_event(generic_event.clone(), &self.pool).await?;
+    
+            let events_page = self
+                .provider
+                .get_events(event_filter,  continuation_token.clone(), 100)
+                .await
+                .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
+    
+            for event in events_page.events {
+                let transaction_hash = hex::encode(event.transaction_hash.to_bytes_be());
+                if self.is_transaction_processed(&transaction_hash).await {
+                    continue;
                 }
-                self.head_chain.update_last_block_indexed(event.block_number as i64).await?;
+
+                if let Some(block_number) = event.block_number {
+                    let block = self.provider.get_block_with_tx_hashes(BlockId::Number(block_number)).await.unwrap();
+                    let timestamp = match block {
+                        MaybePendingBlockWithTxHashes::Block(block) => Some(block.timestamp.to_string()),
+                        MaybePendingBlockWithTxHashes::PendingBlock(block) => Some(block.timestamp.to_string()),
+                    };
+                    let generic_event = GenericEvent {
+                        block_number: block_number as i64,
+                        timestamp,
+                        transaction_hash: transaction_hash.clone(),
+                        key: event.keys.first().map(|k| hex::encode(k.to_bytes_be())),
+                        data: event.data.iter().map(|fe| hex::encode(fe.to_bytes_be())).collect::<Vec<_>>().join(","),
+                    };
+                    if let Some(key) = event.keys.first() {
+                        let key_str = hex::encode(key.to_bytes_be());
+                        if let Some(processor) = self.event_processors.get(&key_str.as_str()) {
+                            processor.process_event(generic_event.clone(), &self.pool).await?;
+                        }
+                        self.head_chain.update_last_block_indexed(block_number as i64).await?;
+                    }
+                }
+
+                self.mark_transaction_as_processed(&transaction_hash).await;
+            }
+            continuation_token = events_page.continuation_token;
+
+            if continuation_token.is_none() {
+                break;
             }
         }
-
         Ok(())
+    }
+
+    async fn is_transaction_processed(&self, transaction_hash: &str) -> bool {
+        let processed_transactions = self.processed_transactions.lock().await;
+        processed_transactions.contains(transaction_hash)
+    }
+
+    async fn mark_transaction_as_processed(&self, transaction_hash: &str) {
+        let mut processed_transactions = self.processed_transactions.lock().await;
+        processed_transactions.insert(transaction_hash.to_string());
     }
 }
 

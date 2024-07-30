@@ -14,8 +14,7 @@ use crate::events::event::Event;
 use crate::events::{
     deposit::Deposit, market_created::MarketCreated, order::Order, order_executed::OrderExecuted,
     pool_amount_updated::PoolAmountUpdated, swap_fees_collected::SwapFeesCollected,
-    swap_info::SwapInfo, withdrawal::Withdrawal, position::Position,
-    swap_info::SwapInfo, withdrawal::Withdrawal, position::Position,
+    swap_info::SwapInfo, withdrawal::Withdrawal, position::Position
 };
 
 #[tokio::main]
@@ -31,6 +30,10 @@ async fn main() -> Result<(), Error> {
 
     let head_chain = HeadChain::new(pool.clone());
     let last_block_indexed = head_chain.get_last_block_indexed().await?;
+    let latest_block_on_chain = provider
+        .block_number()
+        .await
+        .map_err(|e| sqlx::Error::Protocol(format!("{:?}", e)))?;
 
     let start_block = if last_block_indexed > 0 {
         last_block_indexed + 1
@@ -104,43 +107,19 @@ async fn main() -> Result<(), Error> {
     let indexer =
         events::handler::EventIndexer::new(&provider, &pool, event_processors, head_chain);
 
-    let mut current_block = start_block;
-    let mut current_block = start_block;
+
+    if start_block <= latest_block_on_chain as i64 {
+        if let Err(e) = indexer.fetch_and_process_events(start_block as u64).await {
+            eprintln!("Error fetching and processing events: {:?}", e);
+        } else {
+            println!("Initial fetch and process completed successfully.");
+        }
+    }
 
     loop {
-        let latest_block_on_chain = match provider.block_number().await {
-            Ok(block) => block as i64,
-            Err(e) => {
-                eprintln!("Error fetching latest block number: {:?}", e);
-                sleep(Duration::from_secs(10)).await;
-                continue;
-            }
-        };
-
-        if current_block <= latest_block_on_chain {
-            if let Err(e) = indexer.fetch_and_process_events(current_block as u64).await {
-                eprintln!("Error processing pending events: {:?}", e);
-            } else {
-                current_block += 1;
-            }
-        let latest_block_on_chain = match provider.block_number().await {
-            Ok(block) => block as i64,
-            Err(e) => {
-                eprintln!("Error fetching latest block number: {:?}", e);
-                sleep(Duration::from_secs(10)).await;
-                continue;
-            }
-        };
-
-        if current_block < latest_block_on_chain {
-            if let Err(e) = indexer.fetch_and_process_events(current_block as u64).await {
-                eprintln!("Error processing pending events: {:?}", e);
-            } else {
-                current_block += 1;
-            }
+        if let Err(e) = indexer.fetch_pending_events().await {
+            eprintln!("Error processing pending events: {:?}", e);
         }
-
-
         sleep(Duration::from_secs(10)).await;
     }
 }
