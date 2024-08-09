@@ -120,6 +120,6 @@ async fn main() -> Result<(), Error> {
         if let Err(e) = indexer.fetch_pending_events().await {
             eprintln!("Error processing pending events: {:?}", e);
         }
-        sleep(Duration::from_secs(10)).await;
+        sleep(Duration::from_secs(1)).await;
     }
 }
